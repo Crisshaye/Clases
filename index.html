@@ -1,0 +1,2091 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>InventarioGame 🎮</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+<style>
+:root {
+  --bg: #0a0e1a; --surf: #141928; --surf2: #1e2540; --border: #2d3561;
+  --text: #e8ecf5; --muted: #8892b0;
+  --A: #60a5fa; --B: #fb923c; --gold: #fbbf24; --green: #4ade80; --red: #f87171; --purple: #c084fc;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;}
+.screen{display:none;flex-direction:column;min-height:100vh;}
+.screen.active{display:flex;}
+
+/* ── LOADING ── */
+#screen-loading{align-items:center;justify-content:center;gap:16px;}
+.spinner{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--A);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── REGISTER ── */
+#screen-register{align-items:center;justify-content:center;padding:24px;}
+.reg-card{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:28px 24px;width:100%;max-width:440px;display:flex;flex-direction:column;gap:18px;}
+.reg-title{text-align:center;font-size:26px;font-weight:800;background:linear-gradient(135deg,var(--A),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.reg-subtitle{text-align:center;color:var(--muted);font-size:13px;margin-top:-10px;}
+label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+input,select{width:100%;padding:10px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;outline:none;}
+input:focus,select:focus{border-color:var(--A);}
+.icon-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.icon-btn{background:var(--surf2);border:2px solid transparent;border-radius:10px;padding:8px;font-size:22px;cursor:pointer;transition:.15s;text-align:center;}
+.icon-btn.selected{border-color:var(--A);background:rgba(96,165,250,.15);}
+.btn{padding:12px 20px;border-radius:10px;border:none;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;width:100%;}
+.btn-primary{background:linear-gradient(135deg,var(--A),var(--purple));color:#fff;}
+.btn-primary:hover{opacity:.9;}
+.btn-sm{padding:7px 14px;font-size:12px;width:auto;border-radius:8px;background:var(--surf2);color:var(--muted);border:1px solid var(--border);}
+.gm-link{text-align:center;font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;}
+
+/* ── LOBBY ── */
+#screen-lobby{align-items:center;padding:24px;gap:20px;}
+.lobby-title{font-size:24px;font-weight:800;text-align:center;}
+.lobby-teams{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;max-width:600px;}
+.team-card{background:var(--surf);border-radius:12px;padding:16px;border:2px solid;}
+.team-card.A{border-color:var(--A);}
+.team-card.B{border-color:var(--B);}
+.team-name{font-size:14px;font-weight:700;margin-bottom:10px;}
+.team-name.A{color:var(--A);}
+.team-name.B{color:var(--B);}
+.team-member{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;}
+.wait-msg{color:var(--muted);font-size:14px;text-align:center;animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--surf);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10;}
+.topbar-icon{font-size:24px;}
+.topbar-info{flex:1;min-width:0;}
+.topbar-alias{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.topbar-team{font-size:11px;color:var(--muted);}
+.topbar-score{text-align:right;font-size:18px;font-weight:800;color:var(--gold);}
+.topbar-score-label{font-size:10px;color:var(--muted);}
+
+/* ── STAGE CONTENT ── */
+.stage-area{flex:1;overflow-y:auto;padding:20px 16px;}
+.stage-title{font-size:20px;font-weight:800;margin-bottom:4px;}
+.stage-subtitle{font-size:13px;color:var(--muted);margin-bottom:16px;}
+.stage-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-bottom:12px;}
+.badge-theory{background:rgba(96,165,250,.15);color:var(--A);}
+.badge-together{background:rgba(251,191,36,.15);color:var(--gold);}
+.badge-exercise{background:rgba(74,222,128,.15);color:var(--green);}
+.badge-intro{background:rgba(192,132,252,.15);color:var(--purple);}
+.content-card{background:var(--surf);border-radius:12px;padding:18px;margin-bottom:14px;border:1px solid var(--border);}
+.content-card h3{font-size:15px;font-weight:700;margin-bottom:10px;color:var(--A);}
+.content-card p{font-size:14px;line-height:1.7;color:#c8d0e0;margin-bottom:8px;}
+.formula-box{background:var(--surf2);border-radius:8px;padding:12px 16px;font-family:monospace;font-size:14px;margin:10px 0;border-left:3px solid var(--purple);line-height:2;}
+.data-table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;}
+.data-table th{background:var(--surf2);padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--muted);}
+.data-table td{padding:8px 10px;border-top:1px solid var(--border);}
+.data-table .val{font-weight:700;color:var(--gold);}
+.highlight-box{background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);border-radius:8px;padding:12px 14px;font-size:13px;margin:10px 0;}
+.highlight-box.green{background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.3);}
+.highlight-box.gold{background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.3);}
+.chart-container{position:relative;width:100%;margin:12px 0;overflow:hidden;}
+.chart-container canvas{max-width:100%;display:block;}
+/* z-slider */
+.z-slider-wrap{background:var(--surf2);border-radius:10px;padding:14px;margin:10px 0;}
+.z-slider-wrap input[type=range]{width:100%;accent-color:var(--purple);cursor:pointer;margin:8px 0;}
+/* Allow GM preview slider to be interactive even though parent has pointer-events:none */
+#gm-stage-preview .z-slider-wrap { pointer-events:auto; }
+#gm-stage-preview .z-slider-wrap input[type=range] { pointer-events:auto; cursor:pointer; }
+.z-slider-result{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+.z-big{font-size:22px;font-weight:800;color:var(--purple);}
+.pct-big{font-size:22px;font-weight:800;color:var(--green);}
+/* ruleta wheel */
+.wheel-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 0;}
+.wheel-canvas{border-radius:50%;border:4px solid var(--border);}
+.wheel-pointer{font-size:32px;line-height:1;}
+.step-list{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.step-list li{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.6;}
+.step-num{background:var(--A);color:#fff;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.obj-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.obj-card{background:var(--surf2);border-radius:10px;padding:14px;border:1px solid var(--border);}
+.obj-card .obj-icon{font-size:24px;margin-bottom:6px;}
+.obj-card .obj-title{font-size:13px;font-weight:700;margin-bottom:4px;}
+.obj-card .obj-desc{font-size:11px;color:var(--muted);line-height:1.5;}
+.z-table{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:10px 0;}
+.z-cell{background:var(--surf2);border-radius:6px;padding:8px;text-align:center;}
+.z-cell .z-val{font-size:16px;font-weight:800;color:var(--purple);}
+.z-cell .z-desc{font-size:10px;color:var(--muted);margin-top:2px;}
+.z-cell .z-pct{font-size:13px;font-weight:700;color:var(--green);}
+.sim-btn{background:var(--surf2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;}
+.sim-btn:hover{border-color:var(--A);}
+
+/* ── EXERCISE ── */
+.bet-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;}
+.bet-btn{padding:14px;border-radius:12px;border:2px solid var(--border);background:var(--surf);cursor:pointer;text-align:center;transition:.15s;}
+.bet-btn:hover{border-color:var(--A);}
+.bet-btn.selected.normal{border-color:var(--A);background:rgba(96,165,250,.1);}
+.bet-btn.selected.extreme{border-color:var(--red);background:rgba(248,113,113,.1);}
+.bet-btn .bet-icon{font-size:24px;margin-bottom:4px;}
+.bet-btn .bet-name{font-size:14px;font-weight:700;}
+.bet-btn .bet-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.fields-grid{display:flex;flex-direction:column;gap:10px;margin:14px 0;}
+.field-row{display:flex;flex-direction:column;gap:4px;}
+.field-label{font-size:12px;color:var(--muted);font-weight:600;}
+.field-input{padding:10px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;width:100%;outline:none;}
+.field-input:focus{border-color:var(--A);}
+.field-result{padding:10px 12px;border-radius:8px;font-size:14px;font-weight:600;display:flex;justify-content:space-between;}
+.field-result.correct{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);}
+.field-result.half{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);}
+.field-result.wrong{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);}
+.submit-btn{background:linear-gradient(135deg,var(--green),var(--A));color:#fff;padding:14px;border-radius:12px;border:none;font-size:16px;font-weight:800;cursor:pointer;width:100%;margin-top:8px;}
+.submitted-card{background:var(--surf);border-radius:12px;padding:24px;text-align:center;border:1px solid var(--border);}
+.submitted-card .big-check{font-size:48px;margin-bottom:10px;}
+.score-reveal{font-size:32px;font-weight:800;color:var(--gold);margin:10px 0;}
+.score-reveal.negative{color:var(--red);}
+.bet-tag{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;}
+.bet-tag.normal{background:rgba(96,165,250,.15);color:var(--A);}
+.bet-tag.extreme{background:rgba(248,113,113,.15);color:var(--red);}
+
+/* ── BOTTOM BAR ── */
+.bottombar{background:var(--surf);border-top:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:flex-end;gap:10px;}
+.reaction-btn{background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:18px;cursor:pointer;transition:.15s;}
+.reaction-btn:hover{border-color:var(--A);}
+.reaction-btn:disabled{opacity:.4;cursor:default;}
+.reaction-panel{position:fixed;bottom:60px;right:16px;background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;z-index:50;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+.r-btn{font-size:22px;padding:6px;border:none;background:transparent;cursor:pointer;border-radius:6px;transition:.1s;}
+.r-btn:hover{background:var(--surf2);}
+.float-reaction{position:fixed;font-size:32px;animation:floatUp 2.5s ease-out forwards;pointer-events:none;z-index:999;}
+@keyframes floatUp{0%{transform:translateY(0) scale(1);opacity:1;}100%{transform:translateY(-120px) scale(1.5);opacity:0;}}
+
+/* ── GAMEMASTER ── */
+#screen-gm{flex-direction:column;}
+.gm-topbar{background:var(--surf);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.gm-title{font-size:22px;font-weight:800;color:var(--purple);}
+.gm-stage-info{font-size:16px;color:var(--muted);flex:1;}
+.gm-body{display:grid;grid-template-columns:1fr 380px;flex:1;overflow:hidden;}
+@media(max-width:768px){.gm-body{grid-template-columns:1fr;}}
+.gm-left{overflow-y:auto;padding:20px;border-right:1px solid var(--border);}
+.gm-right{overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.gm-nav{display:flex;gap:10px;align-items:center;}
+.gm-nav button{padding:10px 22px;border-radius:8px;border:1px solid var(--border);background:var(--surf2);color:var(--text);cursor:pointer;font-size:16px;font-weight:700;}
+.gm-nav button:hover{border-color:var(--A);}
+.stage-progress{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.sp-dot{width:10px;height:10px;border-radius:50%;background:var(--surf2);border:1px solid var(--border);cursor:pointer;transition:.15s;}
+.sp-dot.active{background:var(--A);}
+.sp-dot.exercise{background:var(--green);}
+.sp-dot.done{background:var(--surf2);border-color:var(--muted);}
+.gm-section-title{font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.5px;margin-bottom:8px;}
+/* GM preview: scale up all text for projector */
+#gm-stage-preview .content-card h3{font-size:20px !important;}
+#gm-stage-preview .content-card p{font-size:16px !important;line-height:1.8 !important;}
+#gm-stage-preview .formula-box{font-size:17px !important;line-height:2.2 !important;}
+#gm-stage-preview .data-table th,#gm-stage-preview .data-table td{font-size:15px !important;padding:10px 12px !important;}
+#gm-stage-preview .highlight-box{font-size:15px !important;padding:14px 16px !important;}
+#gm-stage-preview .stage-title{font-size:26px !important;}
+#gm-stage-preview .stage-badge{font-size:14px !important;padding:5px 14px !important;}
+#gm-stage-preview .step-list li{font-size:16px !important;}
+#gm-stage-preview .z-big,#gm-stage-preview .pct-big{font-size:30px !important;}
+.student-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:15px;}
+.student-row:last-child{border-bottom:none;}
+.s-icon{font-size:22px;}
+.s-info{flex:1;}
+.s-alias{font-weight:600;font-size:14px;}
+.s-team{font-size:11px;color:var(--muted);}
+.s-score{font-weight:800;color:var(--gold);font-size:16px;}
+.s-answer-status{font-size:20px;}
+.gm-ex-panel{background:var(--surf2);border-radius:10px;padding:12px;border:1px solid var(--border);}
+.gm-ex-title{font-size:14px;font-weight:700;margin-bottom:8px;}
+.answer-row{font-size:13px;padding:5px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;}
+.events-bar{background:var(--surf);border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:10px;flex-wrap:wrap;}
+.event-btn{padding:10px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surf2);color:var(--text);cursor:pointer;font-size:15px;font-weight:600;transition:.15s;}
+.event-btn:hover:not(:disabled){border-color:var(--gold);}
+.event-btn:disabled{opacity:.35;cursor:default;}
+.event-btn.used{opacity:.3;text-decoration:line-through;}
+.gm-ex-open-btn{width:100%;padding:12px;border-radius:8px;border:none;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;}
+.gm-ex-open-btn.open{background:rgba(74,222,128,.15);border:1px solid var(--green);color:var(--green);}
+.gm-ex-open-btn.close{background:rgba(248,113,113,.15);border:1px solid var(--red);color:var(--red);}
+.reveal-btn{width:100%;padding:12px;border-radius:8px;border:1px solid var(--gold);background:rgba(251,191,36,.1);color:var(--gold);font-size:15px;font-weight:700;cursor:pointer;}
+
+/* ── OVERLAYS ── */
+.overlay{display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;background:rgba(10,14,26,.85);backdrop-filter:blur(6px);}
+.overlay.active{display:flex;}
+.overlay-card{background:var(--surf);border:1px solid var(--border);border-radius:20px;padding:32px 28px;width:90%;max-width:500px;text-align:center;max-height:90vh;overflow-y:auto;}
+.overlay-title{font-size:28px;font-weight:800;margin-bottom:8px;}
+.overlay-close{position:absolute;top:16px;right:16px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--muted);cursor:pointer;font-size:13px;}
+
+/* ── LEADERBOARD ── */
+.lb-teams{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0;}
+.lb-team-card{border-radius:12px;padding:14px;text-align:center;}
+.lb-team-card.A{background:rgba(96,165,250,.1);border:2px solid var(--A);}
+.lb-team-card.B{background:rgba(251,146,60,.1);border:2px solid var(--B);}
+.lb-team-score{font-size:28px;font-weight:800;}
+.lb-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.lb-rank{width:24px;font-size:16px;font-weight:800;text-align:center;}
+.lb-name{flex:1;font-size:13px;font-weight:600;}
+.lb-pts{font-size:16px;font-weight:800;color:var(--gold);}
+.award-card{background:var(--surf2);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:center;}
+.award-icon{font-size:32px;}
+.award-title{font-size:13px;font-weight:700;color:var(--gold);}
+.award-winner{font-size:15px;font-weight:800;}
+
+/* ── EVENT OVERLAY ── */
+.event-overlay-content{text-align:center;}
+.event-big-icon{font-size:72px;margin-bottom:16px;display:block;}
+.event-headline{font-size:26px;font-weight:800;margin-bottom:8px;}
+.event-detail{font-size:16px;color:var(--muted);}
+@keyframes eventPop{0%{transform:scale(.5);opacity:0;}70%{transform:scale(1.1);}100%{transform:scale(1);opacity:1;}}
+.overlay-card.event-anim{animation:eventPop .4s ease-out;}
+
+/* ── SMITE PICKER ── */
+.player-picker{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;margin:12px 0;}
+.picker-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer;background:var(--surf2);}
+.picker-row:hover{border-color:var(--red);}
+
+/* ── SIMULATION ── */
+.sim-result{background:var(--surf2);border-radius:8px;padding:12px;font-size:13px;margin-top:10px;}
+
+/* ── RESPONSIVENESS ── */
+@media(max-width:480px){
+  .obj-grid{grid-template-columns:1fr;}
+  .bet-selector{grid-template-columns:1fr;}
+  .lobby-teams{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!--  SCREEN: LOADING -->
+<!-- ══════════════════════════════════════════════════ -->
+<div id="screen-loading" class="screen active">
+  <div class="spinner"></div>
+  <p style="color:var(--muted);font-size:14px;">Conectando...</p>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!--  SCREEN: REGISTER -->
+<!-- ══════════════════════════════════════════════════ -->
+<div id="screen-register" class="screen">
+  <div style="display:flex;align-items:center;justify-content:center;flex:1;padding:24px;">
+  <div class="reg-card">
+    <div class="reg-title">InventarioGame 🎮</div>
+    <div class="reg-subtitle">Gestión de Inventarios — MBA</div>
+    <div>
+      <label>Tu nombre real</label>
+      <input id="reg-name" type="text" placeholder="Ej: María González" maxlength="40">
+    </div>
+    <div>
+      <label>Elige tu alias fantástico</label>
+      <select id="reg-alias"></select>
+    </div>
+    <div>
+      <label>Elige tu ícono</label>
+      <div class="icon-grid" id="icon-grid"></div>
+    </div>
+    <button class="btn btn-primary" onclick="doRegister()">¡Unirme al juego! 🚀</button>
+    <div class="gm-link" onclick="showGMLogin()">Soy el Gamemaster 🎓</div>
+    <div id="gm-login-area" style="display:none;flex-direction:column;gap:8px;">
+      <input id="gm-pw" type="password" placeholder="Contraseña del Gamemaster">
+      <button class="btn btn-primary" onclick="doGMLogin()">Entrar como Gamemaster</button>
+    </div>
+    <div id="reg-error" style="color:var(--red);font-size:13px;text-align:center;display:none;"></div>
+  </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!--  SCREEN: LOBBY -->
+<!-- ══════════════════════════════════════════════════ -->
+<div id="screen-lobby" class="screen">
+  <div style="padding:24px;text-align:center;">
+    <div style="font-size:40px;margin-bottom:8px;">⏳</div>
+    <div class="lobby-title">Sala de Espera</div>
+    <div style="color:var(--muted);font-size:14px;margin-bottom:24px;">La clase comenzará cuando el profesor lo indique</div>
+    <div class="lobby-teams" id="lobby-teams"></div>
+    <div class="wait-msg" style="margin-top:20px;">Esperando al profesor...</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!--  SCREEN: STUDENT GAME -->
+<!-- ══════════════════════════════════════════════════ -->
+<div id="screen-game" class="screen">
+  <div class="topbar">
+    <div class="topbar-icon" id="tb-icon">🦁</div>
+    <div class="topbar-info">
+      <div class="topbar-alias" id="tb-alias">—</div>
+      <div class="topbar-team" id="tb-team">—</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="topbar-score" id="tb-score">0</div>
+      <div class="topbar-score-label">pts</div>
+    </div>
+  </div>
+  <div class="stage-area" id="stage-area">
+    <div style="text-align:center;padding:40px;color:var(--muted);">Esperando al profesor...</div>
+  </div>
+  <div class="bottombar">
+    <button class="reaction-btn" id="react-btn" onclick="toggleReactionPanel()">😊</button>
+  </div>
+  <div class="reaction-panel" id="reaction-panel" style="display:none;" id="reaction-panel"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!--  SCREEN: GAMEMASTER -->
+<!-- ══════════════════════════════════════════════════ -->
+<div id="screen-gm" class="screen">
+  <div class="gm-topbar">
+    <div class="gm-title">🎮 GameMaster</div>
+    <div class="gm-stage-info" id="gm-stage-info">Etapa 0/20</div>
+    <div class="gm-nav">
+      <button onclick="advanceStage(-1)">← Anterior</button>
+      <button onclick="advanceStage(1)">Siguiente →</button>
+    </div>
+    <button class="btn-sm" onclick="showLeaderboard()">📊 Leaderboard</button>
+  </div>
+  <div class="stage-progress" id="stage-progress" style="padding:10px 20px;background:var(--surf);border-bottom:1px solid var(--border);"></div>
+  <div class="gm-body">
+    <div class="gm-left" id="gm-stage-preview"></div>
+    <div class="gm-right">
+      <div>
+        <div class="gm-section-title">Alumnos <span id="gm-count" style="color:var(--A);">0</span></div>
+        <div id="gm-student-list"></div>
+      </div>
+      <div id="gm-ex-panel" style="display:none;">
+        <div class="gm-ex-panel">
+          <div class="gm-ex-title">🎯 Ejercicio activo</div>
+          <button id="gm-open-btn" class="gm-ex-open-btn open" onclick="toggleExercise()">✏️ Abrir Ejercicio</button>
+          <div style="margin-top:8px;">
+            <button id="gm-reveal-btn" class="reveal-btn" onclick="revealAnswers()" style="display:none;">🎉 Revelar Respuestas</button>
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:var(--muted);">Respondieron: <span id="gm-answered-count" style="color:var(--green);font-weight:700;">0</span> / <span id="gm-total-count">0</span></div>
+          <div id="gm-answers-list" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="events-bar">
+    <span style="font-size:12px;color:var(--muted);align-self:center;">Eventos (1 uso c/u):</span>
+    <button class="event-btn" id="ev-ruleta" onclick="triggerEvent('ruleta')">🎰 Ruleta</button>
+    <button class="event-btn" id="ev-chaos" onclick="triggerEvent('chaos')">🔀 Chaos</button>
+    <button class="event-btn" id="ev-smite" onclick="triggerEvent('smite')">⚡ Smite</button>
+    <button class="event-btn" id="ev-bomba" onclick="triggerEvent('bomba')">💣 Bomba</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!--  OVERLAY: EVENT -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="overlay" id="overlay-event">
+  <div class="overlay-card event-anim" id="event-card">
+    <span class="event-big-icon" id="event-icon">🎰</span>
+    <div class="event-headline" id="event-headline">¡Evento!</div>
+    <div class="event-detail" id="event-detail"></div>
+    <button class="btn btn-primary" style="margin-top:20px;width:auto;padding:10px 24px;" onclick="closeEventOverlay()">¡Entendido!</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!--  OVERLAY: RULETA WHEEL (GM only) -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="overlay" id="overlay-ruleta">
+  <div class="overlay-card" style="position:relative;text-align:center;max-width:420px;">
+    <button class="overlay-close" onclick="closeOverlay('overlay-ruleta')">✕</button>
+    <div class="overlay-title" style="font-size:20px;margin-bottom:4px;">🎰 ¡La Ruleta!</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">Un alumno recibirá puntos extra</p>
+    <div class="wheel-wrap">
+      <div class="wheel-pointer">▼</div>
+      <canvas id="ruleta-canvas" class="wheel-canvas" width="300" height="300"></canvas>
+    </div>
+    <button id="ruleta-spin-btn" class="btn btn-primary" style="margin-top:16px;" onclick="spinRuleta()">¡Girar! 🎰</button>
+    <div id="ruleta-result" style="margin-top:12px;font-size:15px;font-weight:700;min-height:24px;"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!--  OVERLAY: SMITE PICKER (GM only) -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="overlay" id="overlay-smite">
+  <div class="overlay-card" style="position:relative;">
+    <button class="overlay-close" onclick="closeOverlay('overlay-smite')">✕ Cerrar</button>
+    <div class="overlay-title" style="font-size:20px;">⚡ Selecciona el objetivo del Smite</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">El alumno perderá 25 puntos</p>
+    <div class="player-picker" id="smite-picker"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════ -->
+<!--  OVERLAY: LEADERBOARD -->
+<!-- ══════════════════════════════════════════════════ -->
+<div class="overlay" id="overlay-lb">
+  <div class="overlay-card" style="position:relative;text-align:left;">
+    <button class="overlay-close" onclick="closeOverlay('overlay-lb')">✕ Cerrar</button>
+    <div class="overlay-title" style="font-size:22px;text-align:center;">🏆 Leaderboard</div>
+    <div class="lb-teams" id="lb-teams"></div>
+    <div class="gm-section-title">Ranking individual</div>
+    <div id="lb-rows"></div>
+    <div id="awards-section" style="margin-top:20px;display:none;">
+      <div class="gm-section-title" style="margin-bottom:12px;">🎖️ Premios Especiales</div>
+      <div id="awards-list"></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;" onclick="toggleAwards()">🎖️ Revelar Premios</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+// ⚙️  FIREBASE CONFIG — pega tu config aquí
+// ════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCE2SJj5d4o2UhlgNVlzwinhpWaxRpFw-w",
+  authDomain: "inventario-agents-bot-com.firebaseapp.com",
+  projectId: "inventario-agents-bot-com",
+  storageBucket: "inventario-agents-bot-com.firebasestorage.app",
+  messagingSenderId: "509403718746",
+  appId: "1:509403718746:web:a823fa1e31b61cd3cb2463"
+};
+const GM_PASSWORD = "GASOFA2024"; // Contraseña del gamemaster
+
+// ════════════════════════════════════════════════════
+// 🎮 CONSTANTES DEL JUEGO
+// ════════════════════════════════════════════════════
+const TEAMS = {
+  A: { name: "Los Falsos Dinosaurios", emoji: "🦕", color: "var(--A)" },
+  B: { name: "Los Comerciales Malentendidos", emoji: "📊", color: "var(--B)" }
+};
+const ALIASES = [
+  "El Magnifico Q-Star","La Reina del Z-Score","Baron del Inventario",
+  "CEO de Nada","La Emperatriz del Reorden","Maestro del Alisamiento",
+  "El Profeta del Lead Time","Duquesa del Stock","Lord del EOQ",
+  "La Vidente del Ratio Critico","Señor de los Costos","El Oraculo Normal",
+  "Princesa del Punto de Reorden","El Detective del Holding Cost",
+  "Marquesa del Ciclo Optimo","El Ninja del Inventario",
+  "La Filosofa del Q Optimo","General de la Demanda",
+  "El Chamán del Lead Time","Duque del Stock de Seguridad",
+  "La Estratega del Inventario","El Hechicero del Costo Fijo",
+  "Gobernadora del Periodo","El Sabio del Ratio","La Tigresa del EOQ"
+];
+const ICONS = ['🦁','🐯','🐼','🦊','🐸','🦄','🐙','🦋','🚀','⭐',
+               '🎮','🎯','🧠','🔮','🌊','🏔️','🎪','🎲','🦕','🌵',
+               '🦅','🦜','🦩','🐬','🦈'];
+const REACTIONS = ['👍','😮','🤔','💡','🔥','😂','👏','❓','🤯'];
+
+// ════════════════════════════════════════════════════
+// 📚 EJERCICIOS — respuestas correctas y tolerancias
+// ════════════════════════════════════════════════════
+const EXERCISES = {
+  ej1: {
+    basePoints: 1000,
+    fields: [
+      { key:'Q', label:'Q* óptimo (1 decimal)', correct:857.6, tol:1.0, unit:'unidades' }
+    ]
+  },
+  ej2: {
+    basePoints: 1500,
+    fields: [
+      { key:'Qy',  label:'Q* Modelo Y (1 decimal)',         correct:316.2,  tol:1.0 },
+      { key:'Qz',  label:'Q* Modelo Z (1 decimal)',         correct:197.2,  tol:1.0 },
+      { key:'Qyz', label:'Q* Modelo YZ (1 decimal)',        correct:357.6,  tol:1.0 },
+      { key:'CAy', label:'Costo Anual Y ($ entero)',        correct:316228, tol:500  },
+      { key:'CAz', label:'Costo Anual Z ($ entero)',        correct:354965, tol:500  },
+      { key:'CAyz',label:'Costo Anual YZ ($ entero)',       correct:475395, tol:1000 }
+    ]
+  },
+  ej3: {
+    basePoints: 2000,
+    fields: [
+      { key:'Q',    label:'Q* óptimo (1 decimal)',              correct:619.7,  tol:1.0 },
+      { key:'mLT',  label:'Demanda promedio en LT (1 decimal)', correct:960.0,  tol:1.0 },
+      { key:'sigLT',label:'Desviación estándar en LT (1 dec)', correct:212.1,  tol:1.0 },
+      { key:'z',    label:'Factor de Seguridad z (1 decimal)',  correct:1.6,    tol:0.1 },
+      { key:'IS',   label:'Inventario de Seguridad (1 dec)',    correct:348.9,  tol:2.0 },
+      { key:'R',    label:'Punto de Reorden (1 decimal)',       correct:1308.9, tol:2.0 }
+    ]
+  },
+  ej4: {
+    basePoints: 2000,
+    fields: [
+      { key:'Q',    label:'Q* óptimo (1 decimal)',              correct:619.7,  tol:1.0 },
+      { key:'mPL',  label:'Demanda promedio LT+P (1 dec, P≈3)', correct:1536.0, tol:10.0},
+      { key:'sigLT',label:'Desviación estándar en LT (1 dec)', correct:212.1,  tol:1.0 },
+      { key:'z',    label:'Factor de Seguridad z (1 decimal)',  correct:1.6,    tol:0.1 },
+      { key:'IS',   label:'Inventario de Seguridad (1 dec)',    correct:348.9,  tol:2.0 },
+      { key:'P',    label:'Período de revisión en días (1 dec)',correct:3.2,    tol:0.2 },
+      { key:'T',    label:'Nivel de Inventario T (1 decimal)',  correct:1885.0, tol:5.0 }
+    ]
+  }
+};
+
+// ════════════════════════════════════════════════════
+// 📋 STAGES
+// ════════════════════════════════════════════════════
+const STAGES = [
+  { id:'intro',        type:'intro',    gm:'Intro',              title:'Bienvenidos a InventarioGame' },
+  { id:'objetivos',    type:'theory',   gm:'Objetivos',          title:'Objetivos de la Clase' },
+  { id:'mono-teoria',  type:'theory',   gm:'Mono Periodo - Teoría', title:'Modelo Mono Periodo' },
+  { id:'dist-normal',  type:'theory',   gm:'Distribución Normal',title:'Distribución Normal' },
+  { id:'cu-co',        type:'theory',   gm:'Cu / Co / CR',       title:'Costos y Ratio Crítico' },
+  { id:'camisetas',    type:'together', gm:'Ejemplo Camisetas',  title:'Ejemplo: Camisetas del Campeonato' },
+  { id:'mono-sim',     type:'together', gm:'Simulación Q*',      title:'Simulación: ¿Por qué Q* es óptimo?' },
+  { id:'ej1',          type:'exercise', gm:'Ejercicio 1 ⭐',     title:'Ejercicio 1 — Mono Periodo', exerciseId:'ej1' },
+  { id:'eoq-intro',    type:'theory',   gm:'Multi-Periodo Intro',title:'Modelos Multi-Periodo' },
+  { id:'eoq-formulas', type:'theory',   gm:'EOQ Fórmulas + Q*',  title:'Formulación y Cantidad Óptima' },
+  { id:'eoq-teoria',   type:'theory',   gm:'EOQ - Teoría',       title:'Modelo Determinístico (EOQ)' },
+  { id:'gasofa',       type:'together', gm:'Ejemplo Gasofa',     title:'Ejemplo: Gasolinera GASOFA' },
+  { id:'eoq-costos',   type:'together', gm:'Curvas de Costo',    title:'Visualización de Costos EOQ' },
+  { id:'ej2',          type:'exercise', gm:'Ejercicio 2 ⭐',     title:'Ejercicio 2 — Lavadoras MH', exerciseId:'ej2' },
+  { id:'eoq-demo',     type:'theory',   gm:'Demo F=2S',          title:'Propiedad: El Costo por Periodo Óptimo' },
+  { id:'eoq-ext',      type:'theory',   gm:'Extensiones EOQ',    title:'Extensiones del Modelo EOQ' },
+  { id:'q-teoria',     type:'theory',   gm:'Sistema Q - Teoría', title:'Sistema de Revisión Continua (Q)' },
+  { id:'q-ejemplo',    type:'together', gm:'Ejemplo Cajas',      title:'Ejemplo: Sistema Q — Cajas' },
+  { id:'ej3',          type:'exercise', gm:'Ejercicio 3 ⭐',     title:'Ejercicio 3 — Empresa Manufacturera (Q)', exerciseId:'ej3' },
+  { id:'p-teoria',     type:'theory',   gm:'Sistema P - Teoría', title:'Sistema de Revisión Periódica (P)' },
+  { id:'p-ejemplo',    type:'together', gm:'Ejemplo P',          title:'Ejemplo: Sistema P — Cajas' },
+  { id:'p-vs-q',       type:'theory',   gm:'P vs Q + Costo',     title:'Comparación P vs Q' },
+  { id:'ej4',          type:'exercise', gm:'Ejercicio 4 ⭐',     title:'Ejercicio 4 — Sistema P', exerciseId:'ej4' },
+  { id:'final',        type:'leaderboard', gm:'Cierre 🏆',       title:'¡Fin de la Clase!' }
+];
+
+// ════════════════════════════════════════════════════
+// 🗄️  APP STATE
+// ════════════════════════════════════════════════════
+const state = {
+  uid: null, isGM: false, student: null,
+  session: null, allStudents: {}, allAnswers: {},
+  selectedIcon: null, selectedAlias: null,
+  reactionPanelOpen: false, reactionCooldown: false,
+  activeChart: null, unsubs: []
+};
+
+// ════════════════════════════════════════════════════
+// 🔥 FIREBASE INIT
+// ════════════════════════════════════════════════════
+let db;
+function initFirebase() {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.firestore();
+  firebase.auth().signInAnonymously().then(cred => {
+    state.uid = cred.user.uid;
+    checkExistingSession();
+  }).catch(e => showError('Error de conexión: ' + e.message));
+}
+
+async function checkExistingSession() {
+  const snap = await db.collection('students').doc(state.uid).get();
+  if (snap.exists) {
+    state.student = snap.data();
+    if (state.student.isGM) { enterGM(); return; }
+    subscribeAll();
+    showScreen('screen-game');
+    updateTopbar();
+    // Check if session has started
+    const sess = await db.collection('meta').doc('session').get();
+    if (sess.exists && sess.data().stage > 0) {
+      // Already in progress — show lobby note
+    }
+  } else {
+    populateRegister();
+    showScreen('screen-register');
+  }
+}
+
+// ════════════════════════════════════════════════════
+// 📝 REGISTER
+// ════════════════════════════════════════════════════
+function populateRegister() {
+  const sel = document.getElementById('reg-alias');
+  const shuffled = [...ALIASES].sort(() => Math.random() - 0.5);
+  shuffled.forEach(a => { const o = document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o); });
+  const grid = document.getElementById('icon-grid');
+  ICONS.forEach(ic => {
+    const btn = document.createElement('button');
+    btn.className='icon-btn'; btn.textContent=ic;
+    btn.onclick = () => { document.querySelectorAll('.icon-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); state.selectedIcon=ic; };
+    grid.appendChild(btn);
+  });
+  // Pre-select first icon
+  state.selectedIcon = ICONS[0];
+  grid.children[0].classList.add('selected');
+}
+
+function showGMLogin() {
+  const area = document.getElementById('gm-login-area');
+  area.style.display = area.style.display==='none' ? 'flex' : 'none';
+  area.style.flexDirection = 'column';
+}
+
+async function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const alias = document.getElementById('reg-alias').value;
+  const icon = state.selectedIcon;
+  if (!name) { showRegError('Escribe tu nombre real'); return; }
+  // Assign team (balanced)
+  const snap = await db.collection('students').get();
+  let cntA=0, cntB=0;
+  snap.forEach(d => { if(d.data().teamId==='A') cntA++; else cntB++; });
+  const teamId = cntA <= cntB ? 'A' : 'B';
+  const student = { name, alias, icon, teamId, score:0, isGM:false,
+    answersCount:0, totalResponseMs:0, reactionLastSent:null, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+  await db.collection('students').doc(state.uid).set(student);
+  state.student = student;
+  subscribeAll();
+  showScreen('screen-game');
+  updateTopbar();
+}
+
+async function doGMLogin() {
+  const pw = document.getElementById('gm-pw').value;
+  if (pw !== GM_PASSWORD) { showRegError('Contraseña incorrecta'); return; }
+  const name = document.getElementById('reg-name').value.trim() || 'Profesor';
+  await db.collection('students').doc(state.uid).set({
+    name, alias:'GameMaster', icon:'🎓', teamId:'GM', score:0, isGM:true,
+    answersCount:0, totalResponseMs:0, reactionLastSent:null,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  // Ensure session doc exists
+  const sessSnap = await db.collection('meta').doc('session').get();
+  if (!sessSnap.exists) {
+    await db.collection('meta').doc('session').set({ stage:0, openExercise:null, revealAnswers:false, eventsUsed:{}, activeEvent:null });
+  }
+  enterGM();
+}
+
+function enterGM() {
+  state.isGM = true;
+  subscribeAll();
+  showScreen('screen-gm');
+  buildStageProgress();
+}
+
+function showRegError(msg) {
+  const el = document.getElementById('reg-error');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(()=>el.style.display='none', 3000);
+}
+
+// ════════════════════════════════════════════════════
+// 🔗 SUBSCRIPTIONS
+// ════════════════════════════════════════════════════
+function subscribeAll() {
+  // Reactions (GM sees them float)
+  const uR = db.collection('reactions').orderBy('sentAt','desc').limit(50).onSnapshot(snap => {
+    snap.docChanges().forEach(ch => {
+      if (ch.type === 'added' && state.isGM) {
+        const d = ch.doc.data();
+        floatReactionOnGM(d.emoji, d.icon, d.alias);
+      }
+    });
+  });
+  state.unsubs.push(uR);
+  // Session
+  const u1 = db.collection('meta').doc('session').onSnapshot(snap => {
+    if (!snap.exists) return;
+    const prev = state.session;
+    const next = snap.data();
+    state.session = next;
+    // Check for new event
+    if (next.activeEvent && (!prev || JSON.stringify(prev.activeEvent) !== JSON.stringify(next.activeEvent))) {
+      showEventOverlay(next.activeEvent);
+    }
+    if (state.isGM) { renderGM(); return; }
+    // For students: only fully re-render when something meaningful changes
+    const stageChanged   = !prev || prev.stage !== next.stage;
+    const exChanged      = JSON.stringify(prev?.openExercise) !== JSON.stringify(next.openExercise);
+    const revealChanged  = prev?.revealAnswers !== next.revealAnswers;
+    if (stageChanged || exChanged || revealChanged) {
+      renderStudentStage();
+    } else {
+      updateTopbar(); // score/team update only
+    }
+  });
+  // Students
+  const u2 = db.collection('students').onSnapshot(snap => {
+    snap.docChanges().forEach(ch => {
+      if (ch.type==='removed') delete state.allStudents[ch.doc.id];
+      else state.allStudents[ch.doc.id] = {id:ch.doc.id,...ch.doc.data()};
+    });
+    if (state.isGM) renderGMStudentList();
+    renderLobbyTeams();
+    // Update my student data
+    if (state.allStudents[state.uid]) {
+      state.student = state.allStudents[state.uid];
+      updateTopbar();
+    }
+  });
+  state.unsubs.push(u1, u2);
+}
+
+function subscribeAnswers(exerciseId) {
+  state.unsubs.filter(u=>u._isAnswerSub).forEach(u=>u());
+  const u = db.collection('answers').where('exerciseId','==',exerciseId).onSnapshot(snap => {
+    // Snapshot MY answer before updating the map
+    const prevMyAnswer = state.allAnswers?.[state.uid];
+    state.allAnswers = {};
+    snap.forEach(d => state.allAnswers[d.data().uid] = {id:d.id,...d.data()});
+    if (state.isGM) { renderGMAnswers(exerciseId); return; }
+    // Students: only fully re-render if MY OWN answer state changed
+    // (other students submitting must NOT wipe the in-progress form)
+    const nextMyAnswer = state.allAnswers[state.uid];
+    const myAnswerChanged = JSON.stringify(prevMyAnswer) !== JSON.stringify(nextMyAnswer);
+    if (myAnswerChanged) renderStudentStage();
+  });
+  u._isAnswerSub = true;
+  state.unsubs.push(u);
+}
+
+// ════════════════════════════════════════════════════
+// 🖥️  SCREEN MANAGEMENT
+// ════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showOverlay(id) { document.getElementById(id).classList.add('active'); }
+function closeOverlay(id) { document.getElementById(id).classList.remove('active'); }
+
+// ════════════════════════════════════════════════════
+// 📊 TOPBAR UPDATE
+// ════════════════════════════════════════════════════
+function updateTopbar() {
+  if (!state.student) return;
+  document.getElementById('tb-icon').textContent = state.student.icon;
+  document.getElementById('tb-alias').textContent = state.student.alias;
+  const team = TEAMS[state.student.teamId];
+  if (team) {
+    document.getElementById('tb-team').textContent = team.emoji + ' ' + team.name;
+    document.getElementById('tb-team').style.color = state.student.teamId==='A' ? 'var(--A)' : 'var(--B)';
+  }
+  document.getElementById('tb-score').textContent = (state.student.score||0).toLocaleString();
+}
+
+// ════════════════════════════════════════════════════
+// 🎭 STUDENT STAGE RENDERING
+// ════════════════════════════════════════════════════
+function renderStudentStage() {
+  const sess = state.session;
+  if (!sess) return;
+  const stageIdx = sess.stage || 0;
+  const stage = STAGES[stageIdx];
+  if (!stage) return;
+  const area = document.getElementById('stage-area');
+  destroyActiveChart();
+  // If exercise, check if it's the current one
+  let exId = null;
+  if (stage.type === 'exercise' && stage.exerciseId) {
+    exId = stage.exerciseId;
+    subscribeAnswers(exId);
+  }
+  const myAnswer = exId ? state.allAnswers[state.uid] : null;
+  area.innerHTML = buildStudentContent(stage, sess, myAnswer);
+  // Init charts after DOM update
+  setTimeout(() => initStageCharts(stage.id), 50);
+  // Build reaction panel
+  buildReactionPanel();
+}
+
+function buildStudentContent(stage, sess, myAnswer) {
+  const typeLabel = { theory:'📖 Teoría', together:'🤝 En Conjunto', exercise:'✏️ Ejercicio', intro:'🎮 Intro', leaderboard:'🏆 Cierre' };
+  const typeClass = { theory:'badge-theory', together:'badge-together', exercise:'badge-exercise', intro:'badge-intro', leaderboard:'badge-intro' };
+  let html = `<span class="stage-badge ${typeClass[stage.type]||'badge-theory'}">${typeLabel[stage.type]||''}</span>
+              <div class="stage-title">${stage.title}</div>`;
+  if (stage.type === 'exercise') {
+    html += buildExerciseContent(stage, sess, myAnswer);
+  } else {
+    html += getStageContent(stage.id);
+  }
+  return html;
+}
+
+function buildExerciseContent(stage, sess, myAnswer) {
+  const exId = stage.exerciseId;
+  const ex = EXERCISES[exId];
+  const isOpen = sess.openExercise?.exerciseId === exId && sess.openExercise?.isOpen;
+  const revealed = sess.revealAnswers && sess.openExercise?.exerciseId === exId;
+  if (revealed && myAnswer) return buildRevealedContent(ex, myAnswer);
+  if (myAnswer && !revealed) return `
+    <div class="submitted-card" style="margin-top:16px;">
+      <div class="big-check">✅</div>
+      <p style="font-size:16px;font-weight:700;">¡Respuesta enviada!</p>
+      <p style="color:var(--muted);font-size:13px;margin:8px 0;">Apuesta: <span class="bet-tag ${myAnswer.bet}">${myAnswer.bet==='extreme'?'🚀 EXTREMO':'🎯 NORMAL'}</span></p>
+      <div class="wait-msg" style="margin-top:16px;">Esperando que el profesor revele los resultados...</div>
+    </div>`;
+  if (!isOpen) return `
+    <div class="submitted-card" style="margin-top:16px;">
+      <div style="font-size:48px;">⏳</div>
+      <p style="color:var(--muted);margin-top:12px;">El profesor abrirá el ejercicio pronto</p>
+    </div>`;
+  // Exercise is open — show problem + bet + inputs
+  return buildOpenExercise(stage, ex);
+}
+
+function buildOpenExercise(stage, ex) {
+  const problemHTML = getExerciseProblem(stage.exerciseId);
+  return `
+    ${problemHTML}
+    <div class="content-card" style="margin-top:16px;">
+      <h3>💰 Elige tu apuesta</h3>
+      <div class="bet-selector">
+        <button type="button" class="bet-btn selected normal" id="bet-normal" onclick="selectBet('normal')">
+          <div class="bet-icon">🎯</div>
+          <div class="bet-name">Normal</div>
+          <div class="bet-desc">Ganas 1× puntos<br>No pierdes nada</div>
+        </button>
+        <button type="button" class="bet-btn" id="bet-extreme" onclick="selectBet('extreme')">
+          <div class="bet-icon">🚀</div>
+          <div class="bet-name">Extremo</div>
+          <div class="bet-desc">Ganas 1.5× puntos<br>Pierdes 1.5× si fallas todo</div>
+        </button>
+      </div>
+      <h3 style="margin-top:14px;">📝 Tus respuestas</h3>
+      <div class="fields-grid" id="ex-fields">
+        ${ex.fields.map(f=>`
+          <div class="field-row">
+            <label class="field-label">${f.label}</label>
+            <input class="field-input" type="text" inputmode="decimal" id="field-${f.key}" placeholder="ej: 857.6" autocomplete="off">
+          </div>`).join('')}
+      </div>
+      <button class="submit-btn" onclick="submitAnswer('${stage.exerciseId}')">Enviar Respuesta ✓</button>
+    </div>`;
+}
+
+let selectedBet = 'normal';
+function selectBet(type) {
+  selectedBet = type;
+  const bn = document.getElementById('bet-normal');
+  const be = document.getElementById('bet-extreme');
+  if (bn) bn.className = 'bet-btn' + (type==='normal' ? ' selected normal' : '');
+  if (be) be.className = 'bet-btn' + (type==='extreme' ? ' selected extreme' : '');
+}
+
+function buildRevealedContent(ex, myAnswer) {
+  let totalEarned = 0;
+  const ptsPer = ex.basePoints / ex.fields.length;
+  const rows = ex.fields.map(f => {
+    const student = parseFloat(myAnswer.value?.[f.key]);
+    const diff = Math.abs(student - f.correct);
+    let pts=0, cls='wrong', mark='✗';
+    if (diff <= f.tol) { pts=ptsPer; cls='correct'; mark='✓'; }
+    else if (diff <= f.tol*2) { pts=ptsPer*0.5; cls='half'; mark='~'; }
+    totalEarned += pts;
+    return `<div class="field-result ${cls}">
+      <span>${f.label}: <strong>${isNaN(student)?'—':student.toFixed(1)}</strong></span>
+      <span>${mark} Correcto: ${f.correct} <span style="opacity:.6">(±${pts.toFixed(0)}pts)</span></span>
+    </div>`;
+  }).join('');
+  const bet = myAnswer.bet || 'normal';
+  const finalPts = myAnswer.pointsAwarded ?? 0;
+  const positive = finalPts >= 0;
+  return `
+    <div class="submitted-card">
+      <div style="font-size:42px;">${positive?'🎉':'😬'}</div>
+      <div class="score-reveal ${positive?'':'negative'}">${positive?'+':''}${finalPts.toFixed(0)} pts</div>
+      <div style="margin-bottom:14px;"><span class="bet-tag ${bet}">${bet==='extreme'?'🚀 EXTREMO':'🎯 NORMAL'}</span></div>
+      <div style="text-align:left;">${rows}</div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════
+// 📤 SUBMIT ANSWER
+// ════════════════════════════════════════════════════
+async function submitAnswer(exerciseId) {
+  const ex = EXERCISES[exerciseId];
+  const values = {};
+  let allFilled = true;
+  ex.fields.forEach(f => {
+    const el = document.getElementById('field-'+f.key);
+    const v = el ? el.value.trim().replace(',','.') : '';
+    if (v === '' || v === null || v === undefined) allFilled = false;
+    values[f.key] = parseFloat(v);
+  });
+  if (!allFilled) { alert('Completa todos los campos antes de enviar'); return; }
+  const now = Date.now();
+  const openedAt = state.session?.openExercise?.openedAt?.toMillis?.() || now;
+  const responseMs = now - openedAt;
+  await db.collection('answers').doc(exerciseId+'_'+state.uid).set({
+    exerciseId, uid:state.uid, value:values, bet:selectedBet,
+    submittedAt:firebase.firestore.FieldValue.serverTimestamp(),
+    responseMs, pointsAwarded:null
+  });
+  // Update response time stats
+  await db.collection('students').doc(state.uid).update({
+    answersCount: firebase.firestore.FieldValue.increment(1),
+    totalResponseMs: firebase.firestore.FieldValue.increment(responseMs)
+  });
+  renderStudentStage();
+}
+
+// ════════════════════════════════════════════════════
+// 🎮 GAMEMASTER FUNCTIONS
+// ════════════════════════════════════════════════════
+function renderGM() {
+  const sess = state.session;
+  if (!sess) return;
+  const stageIdx = sess.stage || 0;
+  const stage = STAGES[stageIdx];
+  document.getElementById('gm-stage-info').textContent = `Etapa ${stageIdx+1}/${STAGES.length}: ${stage?.gm||''}`;
+  // Update stage progress dots
+  document.querySelectorAll('.sp-dot').forEach((d,i)=>{
+    d.classList.toggle('active', i===stageIdx);
+    d.classList.toggle('done', i<stageIdx);
+  });
+  // Preview
+  document.getElementById('gm-stage-preview').innerHTML =
+    `<div class="gm-section-title">Vista previa — Alumnos ven:</div>` +
+    `<div style="opacity:.8;pointer-events:none;">${buildStudentContent(stage, sess, null)}</div>`;
+  setTimeout(()=>initStageCharts(stage?.id), 50);
+  // Exercise panel
+  const isExercise = stage?.type==='exercise';
+  document.getElementById('gm-ex-panel').style.display = isExercise?'block':'none';
+  if (isExercise && stage.exerciseId) {
+    const exOpen = sess.openExercise?.exerciseId===stage.exerciseId && sess.openExercise?.isOpen;
+    const revealed = sess.revealAnswers && sess.openExercise?.exerciseId===stage.exerciseId;
+    const openBtn = document.getElementById('gm-open-btn');
+    openBtn.textContent = exOpen ? '🔒 Cerrar Ejercicio' : '✏️ Abrir Ejercicio';
+    openBtn.className = 'gm-ex-open-btn ' + (exOpen?'close':'open');
+    document.getElementById('gm-reveal-btn').style.display = (exOpen||revealed) ? 'block':'none';
+    subscribeAnswers(stage.exerciseId);
+  }
+  // Events
+  const used = sess.eventsUsed || {};
+  ['ruleta','chaos','smite','bomba'].forEach(ev=>{
+    const btn = document.getElementById('ev-'+ev);
+    if (btn) btn.disabled = !!used[ev];
+    if (btn && used[ev]) btn.classList.add('used');
+  });
+}
+
+function buildStageProgress() {
+  const container = document.getElementById('stage-progress');
+  container.innerHTML = STAGES.map((s,i)=>`
+    <div class="sp-dot${s.type==='exercise'?' exercise':''}" title="${s.gm}" onclick="jumpToStage(${i})"></div>`).join('');
+}
+
+async function advanceStage(delta) {
+  const sess = state.session || {stage:0};
+  const next = Math.max(0, Math.min(STAGES.length-1, (sess.stage||0)+delta));
+  await db.collection('meta').doc('session').update({ stage:next, openExercise:null, revealAnswers:false });
+}
+
+async function jumpToStage(idx) {
+  await db.collection('meta').doc('session').update({ stage:idx, openExercise:null, revealAnswers:false });
+}
+
+function renderGMStudentList() {
+  const students = Object.values(state.allStudents).filter(s=>!s.isGM).sort((a,b)=>b.score-a.score);
+  document.getElementById('gm-count').textContent = students.length;
+  const exId = state.session?.openExercise?.exerciseId;
+  document.getElementById('gm-student-list').innerHTML = students.map(s=>`
+    <div class="student-row">
+      <span class="s-icon">${s.icon}</span>
+      <div class="s-info">
+        <div class="s-alias">${s.alias}</div>
+        <div class="s-team" style="color:${s.teamId==='A'?'var(--A)':'var(--B)'}">${TEAMS[s.teamId]?.name||''}</div>
+      </div>
+      <span class="s-score">${(s.score||0).toLocaleString()}</span>
+      <span class="s-answer-status">${exId && state.allAnswers[s.id] ? '✅' : (exId?'⏳':'')}</span>
+    </div>`).join('');
+}
+
+function renderGMAnswers(exerciseId) {
+  const answers = Object.values(state.allAnswers);
+  const total = Object.values(state.allStudents).filter(s=>!s.isGM).length;
+  document.getElementById('gm-answered-count').textContent = answers.length;
+  document.getElementById('gm-total-count').textContent = total;
+  document.getElementById('gm-answers-list').innerHTML = answers.map(a=>{
+    const s = state.allStudents[a.uid];
+    return `<div class="answer-row"><span>${s?.icon||'?'} ${s?.alias||'?'}</span><span class="bet-tag ${a.bet}">${a.bet==='extreme'?'🚀':'🎯'}</span></div>`;
+  }).join('');
+}
+
+async function toggleExercise() {
+  const sess = state.session;
+  const stage = STAGES[sess?.stage||0];
+  if (!stage.exerciseId) return;
+  const exId = stage.exerciseId;
+  const isOpen = sess.openExercise?.exerciseId===exId && sess.openExercise?.isOpen;
+  await db.collection('meta').doc('session').update({
+    openExercise: { exerciseId:exId, isOpen:!isOpen, openedAt:firebase.firestore.FieldValue.serverTimestamp() },
+    revealAnswers: false
+  });
+}
+
+async function revealAnswers() {
+  const sess = state.session;
+  const stage = STAGES[sess?.stage||0];
+  const exId = stage.exerciseId;
+  if (!exId) return;
+  const ex = EXERCISES[exId];
+  // Close exercise first
+  await db.collection('meta').doc('session').update({ 'openExercise.isOpen':false });
+  // Score all answers
+  const ansSnap = await db.collection('answers').where('exerciseId','==',exId).get();
+  const batch = db.batch();
+  ansSnap.forEach(d => {
+    const ans = d.data();
+    const { earned, finalPts } = calculateScore(ex, ans);
+    batch.update(d.ref, { pointsAwarded:finalPts });
+    const studentRef = db.collection('students').doc(ans.uid);
+    batch.update(studentRef, { score: firebase.firestore.FieldValue.increment(finalPts) });
+  });
+  await batch.commit();
+  await db.collection('meta').doc('session').update({ revealAnswers:true });
+}
+
+function calculateScore(ex, ans) {
+  const ptsPer = ex.basePoints / ex.fields.length;
+  let earned = 0;
+  ex.fields.forEach(f => {
+    const sv = parseFloat(ans.value?.[f.key]) || 0;
+    const diff = Math.abs(sv - f.correct);
+    if (diff <= f.tol) earned += ptsPer;
+    else if (diff <= f.tol*2) earned += ptsPer*0.5;
+  });
+  let finalPts;
+  if (ans.bet === 'extreme') {
+    finalPts = earned > 0 ? Math.round(earned * 1.5) : -Math.round(ex.basePoints * 1.5);
+  } else {
+    finalPts = Math.round(earned);
+  }
+  return { earned, finalPts };
+}
+
+// ════════════════════════════════════════════════════
+// ⚡ EVENTS
+// ════════════════════════════════════════════════════
+async function triggerEvent(type) {
+  const used = state.session?.eventsUsed || {};
+  if (used[type]) return;
+  if (type === 'smite') { showSmitePicker(); return; }
+  if (type === 'ruleta') { showRuletaWheel(); return; }
+  let data = {};
+  const students = Object.values(state.allStudents).filter(s=>!s.isGM);
+  if (false) {
+    // placeholder — ruleta handled above
+  } else if (type === 'chaos') {
+    // Swap one member from each team
+    const teamA = students.filter(s=>s.teamId==='A');
+    const teamB = students.filter(s=>s.teamId==='B');
+    if (teamA.length && teamB.length) {
+      const a = teamA[Math.floor(Math.random()*teamA.length)];
+      const b = teamB[Math.floor(Math.random()*teamB.length)];
+      await db.collection('students').doc(a.id).update({ teamId:'B' });
+      await db.collection('students').doc(b.id).update({ teamId:'A' });
+      data = { alias1:a.alias, icon1:a.icon, alias2:b.alias, icon2:b.icon };
+    }
+  } else if (type === 'bomba') {
+    const target = students[Math.floor(Math.random()*students.length)];
+    data = { targetAlias:target?.alias, targetIcon:target?.icon };
+  }
+  const activeEvent = { type, data, triggeredAt: Date.now() };
+  const update = { activeEvent, [`eventsUsed.${type}`]:true };
+  await db.collection('meta').doc('session').update(update);
+  setTimeout(async ()=>{ await db.collection('meta').doc('session').update({activeEvent:null}); }, 5000);
+}
+
+// ── RULETA WHEEL ──
+let ruletaTarget = null, ruletaPts = 0, ruletaSpinning = false;
+function showRuletaWheel() {
+  const students = Object.values(state.allStudents).filter(s=>!s.isGM);
+  if (!students.length) { alert('No hay alumnos conectados'); return; }
+  ruletaTarget = null; ruletaPts = 0; ruletaSpinning = false;
+  document.getElementById('ruleta-result').textContent = '';
+  document.getElementById('ruleta-spin-btn').disabled = false;
+  showOverlay('overlay-ruleta');
+  drawRuletaWheel(students, 0);
+}
+
+function drawRuletaWheel(students, angle) {
+  const canvas = document.getElementById('ruleta-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, cx = W/2, cy = W/2, r = W/2 - 6;
+  const n = students.length;
+  const colors = ['#60a5fa','#fb923c','#4ade80','#c084fc','#fbbf24','#f87171','#34d399','#f472b6'];
+  ctx.clearRect(0,0,W,W);
+  for (let i=0;i<n;i++) {
+    const start = angle + (2*Math.PI/n)*i, end = start + 2*Math.PI/n;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,end);
+    ctx.fillStyle = colors[i%colors.length]; ctx.fill();
+    ctx.strokeStyle='#0a0e1a'; ctx.lineWidth=2; ctx.stroke();
+    // Label
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(start+(end-start)/2);
+    ctx.textAlign='right'; ctx.fillStyle='#fff'; ctx.font=`bold ${Math.min(13,200/n)}px sans-serif`;
+    ctx.fillText(students[i].icon+' '+students[i].alias.split(' ')[0], r-8, 5);
+    ctx.restore();
+  }
+  // Center dot
+  ctx.beginPath(); ctx.arc(cx,cy,14,0,2*Math.PI); ctx.fillStyle='#0a0e1a'; ctx.fill();
+  ctx.fillStyle='#e8ecf5'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('🎰',cx,cy);
+}
+
+function spinRuleta() {
+  if (ruletaSpinning) return;
+  ruletaSpinning = true;
+  document.getElementById('ruleta-spin-btn').disabled = true;
+  document.getElementById('ruleta-result').textContent = '';
+  const students = Object.values(state.allStudents).filter(s=>!s.isGM);
+  const winIdx = Math.floor(Math.random()*students.length);
+  const pts = [100,150,200,300,500][Math.floor(Math.random()*5)];
+  const totalSpins = 6 + Math.random()*4; // 6-10 full rotations
+  const targetAngle = -(2*Math.PI/students.length)*winIdx + Math.PI/students.length; // center winner at top
+  const finalAngle = totalSpins*2*Math.PI + targetAngle;
+  let startTime = null;
+  const duration = 4000;
+  function animate(ts) {
+    if (!startTime) startTime = ts;
+    const elapsed = ts - startTime;
+    const t = Math.min(elapsed/duration, 1);
+    const ease = 1 - Math.pow(1-t, 4); // ease-out quartic
+    const angle = ease * finalAngle;
+    drawRuletaWheel(students, angle);
+    if (t < 1) { requestAnimationFrame(animate); }
+    else {
+      ruletaTarget = students[winIdx];
+      ruletaPts = pts;
+      document.getElementById('ruleta-result').innerHTML = `🎉 <strong>${ruletaTarget.icon} ${ruletaTarget.alias}</strong> gana <span style="color:var(--gold)">+${pts} pts</span>`;
+      document.getElementById('ruleta-spin-btn').textContent = '✅ Confirmar';
+      document.getElementById('ruleta-spin-btn').disabled = false;
+      document.getElementById('ruleta-spin-btn').onclick = confirmRuleta;
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+async function confirmRuleta() {
+  if (!ruletaTarget) return;
+  closeOverlay('overlay-ruleta');
+  await db.collection('students').doc(ruletaTarget.id).update({ score:firebase.firestore.FieldValue.increment(ruletaPts) });
+  const data = { targetAlias:ruletaTarget.alias, targetIcon:ruletaTarget.icon, pts:ruletaPts };
+  const activeEvent = { type:'ruleta', data, triggeredAt: Date.now() };
+  await db.collection('meta').doc('session').update({ activeEvent, 'eventsUsed.ruleta':true });
+  setTimeout(async ()=>{ await db.collection('meta').doc('session').update({activeEvent:null}); }, 5000);
+  // Reset spin button for next use
+  const btn = document.getElementById('ruleta-spin-btn');
+  if (btn) { btn.textContent='¡Girar! 🎰'; btn.onclick = spinRuleta; }
+}
+
+function showSmitePicker() {
+  const students = Object.values(state.allStudents).filter(s=>!s.isGM);
+  document.getElementById('smite-picker').innerHTML = students.map(s=>`
+    <div class="picker-row" onclick="applySmite('${s.id}','${s.alias}','${s.icon}')">
+      <span style="font-size:20px;">${s.icon}</span>
+      <div><div style="font-size:13px;font-weight:600;">${s.alias}</div>
+        <div style="font-size:11px;color:var(--muted);">${TEAMS[s.teamId]?.name||''} — ${(s.score||0)} pts</div></div>
+    </div>`).join('');
+  showOverlay('overlay-smite');
+}
+
+async function applySmite(uid, alias, icon) {
+  closeOverlay('overlay-smite');
+  await db.collection('students').doc(uid).update({ score:firebase.firestore.FieldValue.increment(-25) });
+  const activeEvent = { type:'smite', data:{ targetAlias:alias, targetIcon:icon, pts:-25 }, triggeredAt:Date.now() };
+  await db.collection('meta').doc('session').update({ activeEvent, 'eventsUsed.smite':true });
+  setTimeout(async ()=>{ await db.collection('meta').doc('session').update({activeEvent:null}); }, 4000);
+}
+
+function showEventOverlay(ev) {
+  if (!ev) return;
+  const CONFIGS = {
+    ruleta: { icon:'🎰', headline:'¡La Ruleta giró!', detail: ev.data?.targetIcon+' '+ev.data?.targetAlias+' ganó <strong style="color:var(--gold)">+'+ev.data?.pts+' pts</strong>' },
+    chaos:  { icon:'🔀', headline:'¡CHAOS!', detail: ev.data?.icon1+' '+ev.data?.alias1+' y '+ev.data?.icon2+' '+ev.data?.alias2+' cambiaron de equipo 😱' },
+    smite:  { icon:'⚡', headline:'¡SMITE!', detail: ev.data?.targetIcon+' '+ev.data?.targetAlias+' perdió <strong style="color:var(--red)">25 pts</strong>' },
+    bomba:  { icon:'💣', headline:'¡BOMBA!', detail: ev.data?.targetIcon+' '+ev.data?.targetAlias+' fue impactado... ¡pero sobrevive! 💥' }
+  };
+  const cfg = CONFIGS[ev.type] || { icon:'🎮', headline:'Evento', detail:'' };
+  document.getElementById('event-icon').textContent = cfg.icon;
+  document.getElementById('event-headline').textContent = cfg.headline;
+  document.getElementById('event-detail').innerHTML = cfg.detail;
+  showOverlay('overlay-event');
+}
+function closeEventOverlay() { closeOverlay('overlay-event'); }
+
+// ════════════════════════════════════════════════════
+// 😊 REACTIONS
+// ════════════════════════════════════════════════════
+function buildReactionPanel() {
+  const panel = document.getElementById('reaction-panel');
+  panel.innerHTML = REACTIONS.map(r=>`<button class="r-btn" onclick="sendReaction('${r}')">${r}</button>`).join('');
+}
+function toggleReactionPanel() {
+  const p = document.getElementById('reaction-panel');
+  p.style.display = p.style.display==='none' ? 'grid' : 'none';
+}
+async function sendReaction(emoji) {
+  document.getElementById('reaction-panel').style.display='none';
+  const last = state.student?.reactionLastSent?.toMillis?.() || 0;
+  if (Date.now()-last < 5*60*1000) { alert('Puedes enviar 1 reacción cada 5 minutos'); return; }
+  await db.collection('students').doc(state.uid).update({ reactionLastSent:firebase.firestore.FieldValue.serverTimestamp() });
+  // Broadcast reaction
+  await db.collection('reactions').add({ uid:state.uid, icon:state.student.icon, alias:state.student.alias, emoji, sentAt:firebase.firestore.FieldValue.serverTimestamp() });
+  floatReaction(emoji);
+}
+function floatReaction(emoji) {
+  const el = document.createElement('div');
+  el.className = 'float-reaction';
+  el.textContent = emoji;
+  el.style.left = (20+Math.random()*60)+'vw';
+  el.style.bottom = '80px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 2600);
+}
+function floatReactionOnGM(emoji, icon, alias) {
+  // Show floating emoji + name on GM screen
+  const el = document.createElement('div');
+  el.style.cssText = `position:fixed;font-size:28px;pointer-events:none;z-index:999;
+    left:${10+Math.random()*70}vw;top:${60+Math.random()*20}vh;
+    animation:floatUp 3s ease-out forwards;display:flex;align-items:center;gap:4px;`;
+  el.innerHTML = `<span>${emoji}</span><span style="font-size:11px;color:var(--muted);background:var(--surf);padding:2px 6px;border-radius:8px;">${icon} ${alias}</span>`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 3100);
+}
+
+// ════════════════════════════════════════════════════
+// 🏆 LEADERBOARD & AWARDS
+// ════════════════════════════════════════════════════
+let awardsShown = false;
+function showLeaderboard() {
+  awardsShown = false;
+  document.getElementById('awards-section').style.display='none';
+  renderLeaderboard();
+  showOverlay('overlay-lb');
+}
+function renderLeaderboard() {
+  const students = Object.values(state.allStudents).filter(s=>!s.isGM).sort((a,b)=>b.score-a.score);
+  let scA=0,scB=0,cntA=0,cntB=0;
+  students.forEach(s=>{ if(s.teamId==='A'){scA+=s.score||0;cntA++;} else{scB+=s.score||0;cntB++;} });
+  document.getElementById('lb-teams').innerHTML = `
+    <div class="lb-team-card A"><div style="font-size:20px;">🦕</div><div class="team-name A">${TEAMS.A.name}</div><div class="lb-team-score" style="color:var(--A)">${scA.toLocaleString()}</div><div style="font-size:11px;color:var(--muted)">${cntA} miembros</div></div>
+    <div class="lb-team-card B"><div style="font-size:20px;">📊</div><div class="team-name B">${TEAMS.B.name}</div><div class="lb-team-score" style="color:var(--B)">${scB.toLocaleString()}</div><div style="font-size:11px;color:var(--muted)">${cntB} miembros</div></div>`;
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('lb-rows').innerHTML = students.map((s,i)=>`
+    <div class="lb-row">
+      <div class="lb-rank">${medals[i]||i+1}</div>
+      <div style="font-size:20px;">${s.icon}</div>
+      <div class="lb-name">${s.alias}<div style="font-size:11px;color:${s.teamId==='A'?'var(--A)':'var(--B)'}">${TEAMS[s.teamId]?.name||''}</div></div>
+      <div class="lb-pts">${(s.score||0).toLocaleString()}</div>
+    </div>`).join('');
+}
+function toggleAwards() {
+  awardsShown = !awardsShown;
+  document.getElementById('awards-section').style.display = awardsShown?'block':'none';
+  if (!awardsShown) return;
+  const students = Object.values(state.allStudents).filter(s=>!s.isGM).sort((a,b)=>b.score-a.score);
+  let scA=0,scB=0; students.forEach(s=>{ if(s.teamId==='A')scA+=s.score||0; else scB+=s.score||0; });
+  const winTeam = scA>=scB?'A':'B';
+  const teamStudents = students.filter(s=>s.teamId===winTeam);
+  const mvpA = students.filter(s=>s.teamId==='A').sort((a,b)=>b.score-a.score)[0];
+  const mvpB = students.filter(s=>s.teamId==='B').sort((a,b)=>b.score-a.score)[0];
+  const freeRider = teamStudents.sort((a,b)=>a.score-b.score)[0];
+  const fastest = students.filter(s=>s.answersCount>0).sort((a,b)=>((a.totalResponseMs||0)/a.answersCount)-((b.totalResponseMs||0)/b.answersCount))[0];
+  const adorable = students[Math.floor(Math.random()*students.length)];
+  const awards = [
+    { icon:'🏆', title:'Equipo Ganador', winner: TEAMS[winTeam].emoji+' '+TEAMS[winTeam].name+' ('+Math.max(scA,scB).toLocaleString()+' pts)' },
+    { icon:'⭐', title:'MVP — '+TEAMS.A.name, winner: mvpA?(mvpA.icon+' '+mvpA.alias):'—' },
+    { icon:'⭐', title:'MVP — '+TEAMS.B.name, winner: mvpB?(mvpB.icon+' '+mvpB.alias):'—' },
+    { icon:'🛋️', title:'Free Rider', winner: freeRider?(freeRider.icon+' '+freeRider.alias+' (menor puntaje en equipo ganador)'):'—' },
+    { icon:'⚡', title:'El más rápido', winner: fastest?(fastest.icon+' '+fastest.alias+' ('+(fastest.totalResponseMs/fastest.answersCount/1000).toFixed(1)+'s prom.)'):'—' },
+    { icon:'💖', title:'El más adorable', winner: adorable?(adorable.icon+' '+adorable.alias+' (selección aleatoria ✨)'):'—' }
+  ];
+  document.getElementById('awards-list').innerHTML = awards.map(a=>`
+    <div class="award-card"><div class="award-icon">${a.icon}</div>
+    <div><div class="award-title">${a.title}</div><div class="award-winner">${a.winner}</div></div></div>`).join('');
+}
+
+// ════════════════════════════════════════════════════
+// 🏡 LOBBY TEAMS
+// ════════════════════════════════════════════════════
+function renderLobbyTeams() {
+  const el = document.getElementById('lobby-teams');
+  if (!el) return;
+  ['A','B'].forEach(tid=>{
+    const members = Object.values(state.allStudents).filter(s=>s.teamId===tid&&!s.isGM);
+    const card = el.querySelector(`.team-card.${tid}`);
+    if (card) card.querySelector('.members').innerHTML = members.map(s=>`<div class="team-member"><span>${s.icon}</span><span>${s.alias}</span></div>`).join('');
+  });
+}
+document.getElementById('lobby-teams').innerHTML = ['A','B'].map(t=>`
+  <div class="team-card ${t}">
+    <div class="team-name ${t}">${TEAMS[t].emoji} ${TEAMS[t].name}</div>
+    <div class="members"></div>
+  </div>`).join('');
+
+// ════════════════════════════════════════════════════
+// 📈 CHARTS
+// ════════════════════════════════════════════════════
+function destroyActiveChart() {
+  if (state.activeChart) { try { state.activeChart.destroy(); } catch(e){} state.activeChart=null; }
+  // Destroy all charts
+  Chart.helpers?.each?.(Chart.instances, c=>c.destroy?.());
+}
+
+function initStageCharts(stageId) {
+  if (stageId === 'dist-normal') { const s=document.getElementById('z-slider'); initNormalChart(s?parseFloat(s.value):1.0); }
+  if (stageId === 'cu-co') initCuCoChart();
+  if (stageId === 'eoq-costos') initEOQChart();
+  if (stageId === 'mono-sim') initMonoSimChart();
+}
+
+function normalPDF(z) { return Math.exp(-0.5*z*z)/Math.sqrt(2*Math.PI); }
+function normalCDF(z) {
+  // Approximation
+  const t=1/(1+0.2316419*Math.abs(z));
+  const d=0.3989423*Math.exp(-z*z/2);
+  const p=d*t*(0.3193815+t*(-0.3565638+t*(1.7814779+t*(-1.8212560+t*1.3302744))));
+  return z>=0 ? 1-p : p;
+}
+
+function initNormalChart(zVal) {
+  zVal = zVal ?? 1.0;
+  const canvas = document.getElementById('normal-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dataFull=[], dataFill=[];
+  for (let z=-3.5; z<=3.5; z+=0.05) {
+    const y = normalPDF(z);
+    dataFull.push({x:Math.round(z*100)/100, y});
+    dataFill.push({x:Math.round(z*100)/100, y: z<=zVal ? y : 0});
+  }
+  if (state.activeChart) { state.activeChart.destroy(); state.activeChart=null; }
+  state.activeChart = new Chart(ctx, {
+    type:'line',
+    data:{ datasets:[
+      { label:'Distribución Normal', data:dataFull, borderColor:'rgba(96,165,250,0.9)', borderWidth:2.5, fill:false, pointRadius:0, tension:0.4 },
+      { label:`Área (z≤${zVal.toFixed(2)})`, data:dataFill, backgroundColor:'rgba(74,222,128,0.3)', fill:true, pointRadius:0, borderWidth:0, tension:0.4 },
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, animation:{duration:200}, parsing:false,
+      scales:{ x:{type:'linear',min:-3.5,max:3.5,title:{display:true,text:'z',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:8},grid:{color:'rgba(255,255,255,0.05)'}},
+               y:{display:false} },
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:d=>`P(Z≤${d.parsed.x.toFixed(2)}) = ${(normalCDF(d.parsed.x)*100).toFixed(1)}%`}} } }
+  });
+}
+
+function updateZSlider(val) {
+  const z = parseFloat(val);
+  const pct = (normalCDF(z)*100).toFixed(1);
+  const disp = document.getElementById('z-display');
+  const pctDisp = document.getElementById('z-pct-display');
+  if (disp) disp.textContent = z.toFixed(2);
+  if (pctDisp) pctDisp.textContent = pct + '%';
+  // Lazy-init chart if it was never created (e.g. slider moved before timeout)
+  if (!state.activeChart) { initNormalChart(z); return; }
+  if (state.activeChart.data.datasets.length > 1) {
+    const fullData = state.activeChart.data.datasets[0].data;
+    state.activeChart.data.datasets[1].data = fullData.map(p => ({ x: p.x, y: p.x <= z ? p.y : 0 }));
+    state.activeChart.data.datasets[1].label = `Área (z≤${z.toFixed(2)}) = ${pct}%`;
+    state.activeChart.update('none');
+  }
+}
+
+// ── Stage 5: Ganancia esperada vs Q (Gorros) ──
+function initCuCoChart() {
+  const canvas = document.getElementById('cucoprofit-chart');
+  if (!canvas) return;
+  const mu=100, sigma=25, Cu=100, Co=20;
+  const qVals=[], profits=[];
+  for(let q=40; q<=175; q+=2) {
+    let total=0;
+    for(let s=0; s<1200; s++) {
+      const u1=Math.random()||1e-9, u2=Math.random();
+      const d = mu + sigma*Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+      total += Math.min(d,q)*Cu - Math.max(0,q-d)*Co;
+    }
+    qVals.push(q); profits.push(Math.round(total/1200));
+  }
+  const maxP = Math.max(...profits);
+  const optQ = qVals[profits.indexOf(maxP)];
+  const initQ = optQ; // start at optimum
+  if (state.activeChart) { state.activeChart.destroy(); state.activeChart=null; }
+  state.activeChart = new Chart(canvas, {
+    type:'line',
+    data:{ datasets:[{
+      label:'Ganancia esperada ($)', parsing:false,
+      data: qVals.map((q,i)=>({x:q, y:profits[i]})),
+      borderColor:'#60a5fa', backgroundColor:'rgba(96,165,250,0.1)',
+      fill:true, pointRadius:0, tension:0.4, borderWidth:2.5
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      scales:{
+        x:{type:'linear',title:{display:true,text:'Q pedido (gorros)',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:8},grid:{color:'rgba(255,255,255,0.05)'}},
+        y:{title:{display:true,text:'Ganancia esperada ($)',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:6,callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(255,255,255,0.05)'}}
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>`Ganancia: $${ctx.parsed.y.toLocaleString()}`,title:items=>`Q = ${items[0].parsed.x} gorros`}},
+        annotation:{annotations:{
+          opt:{type:'line',xMin:optQ,xMax:optQ,borderColor:'#4ade80',borderWidth:2.5,borderDash:[0,0],
+               label:{display:true,content:'Q* = '+optQ,position:'end',color:'#4ade80',font:{size:12,weight:'bold'},backgroundColor:'rgba(10,14,26,0.8)'}},
+          cur:{type:'line',xMin:initQ,xMax:initQ,borderColor:'#fbbf24',borderWidth:2,borderDash:[7,4],
+               label:{display:true,content:'Q = '+initQ,position:'start',color:'#fbbf24',font:{size:11},backgroundColor:'rgba(10,14,26,0.8)'}}
+        }}
+      }
+    }
+  });
+  state.activeChart._cucoData = {qVals, profits, optQ, maxP};
+  updateCuCoQDisplay(initQ);
+}
+
+function updateCuCoQ(val) {
+  const q = parseInt(val);
+  if (!state.activeChart?._cucoData) { initCuCoChart(); return; }
+  const {qVals, profits} = state.activeChart._cucoData;
+  const nearest = qVals.reduce((a,b)=>Math.abs(b-q)<Math.abs(a-q)?b:a);
+  updateCuCoQDisplay(nearest);
+  state.activeChart.options.plugins.annotation.annotations.cur.xMin = nearest;
+  state.activeChart.options.plugins.annotation.annotations.cur.xMax = nearest;
+  state.activeChart.options.plugins.annotation.annotations.cur.label.content = 'Q = '+nearest;
+  state.activeChart.update('none');
+}
+
+function updateCuCoQDisplay(q) {
+  const disp = document.getElementById('cucoq-display');
+  const pdisp = document.getElementById('cucoq-profit');
+  const ddisp = document.getElementById('cucoq-diff');
+  if (!state.activeChart?._cucoData) return;
+  const {qVals, profits, optQ, maxP} = state.activeChart._cucoData;
+  const idx = qVals.indexOf(qVals.reduce((a,b)=>Math.abs(b-q)<Math.abs(a-q)?b:a));
+  const profit = profits[idx] ?? 0;
+  const diff = profit - maxP;
+  if (disp) disp.textContent = q;
+  if (pdisp) pdisp.textContent = '$'+profit.toLocaleString();
+  if (ddisp) {
+    ddisp.textContent = diff === 0 ? '= óptimo' : (diff > 0 ? '+'+diff.toLocaleString() : diff.toLocaleString())+' vs Q*';
+    ddisp.style.color = diff === 0 ? 'var(--green)' : 'var(--red)';
+  }
+}
+
+function initEOQChart() {
+  const canvas = document.getElementById('eoq-chart');
+  if (!canvas) return;
+  const D=48000,S=7500,iC=45;
+  const Qopt = Math.sqrt(2*S*D/iC);
+  const fixed=[], hold=[], total=[];
+  for(let q=500;q<=12000;q+=200) {
+    const f=S*D/q, h=iC*q/2, t=f+h;
+    fixed.push({x:q,y:Math.round(f)}); hold.push({x:q,y:Math.round(h)}); total.push({x:q,y:Math.round(t)});
+  }
+  if (state.activeChart) state.activeChart.destroy();
+  state.activeChart = new Chart(canvas, {
+    type:'line',
+    data:{datasets:[
+      {label:'Costo Pedido (S·D/Q)', data:fixed, borderColor:'#60a5fa', borderWidth:2.5, pointRadius:0, tension:0.3, fill:false},
+      {label:'Costo Inventario (iC·Q/2)', data:hold, borderColor:'#fb923c', borderWidth:2.5, pointRadius:0, tension:0.3, fill:false},
+      {label:'Costo Total', data:total, borderColor:'#4ade80', borderWidth:3, pointRadius:0, tension:0.3, fill:false},
+    ]},
+    options:{responsive:true, maintainAspectRatio:false, parsing:false,
+      interaction:{mode:'index', intersect:false},
+      scales:{x:{type:'linear',title:{display:true,text:'Q (litros)',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:7},grid:{color:'rgba(255,255,255,0.05)'}},
+              y:{title:{display:true,text:'Costo Anual ($)',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:6,callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(255,255,255,0.05)'}}},
+      plugins:{
+        legend:{labels:{color:'#e8ecf5',font:{size:12}}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString()}`,title:items=>`Q = ${items[0].parsed.x.toLocaleString()} litros`}},
+        annotation:{annotations:{line1:{type:'line',xMin:Qopt,xMax:Qopt,borderColor:'#fbbf24',borderWidth:2.5,borderDash:[6,4],label:{display:true,content:'Q* = '+Math.round(Qopt)+' L',position:'end',color:'#fbbf24',font:{size:13,weight:'bold'},backgroundColor:'rgba(10,14,26,0.8)'}}}}}
+    }
+  });
+}
+
+function initMonoSimChart() {
+  const canvas = document.getElementById('mono-profit-chart');
+  if (!canvas) return;
+  const mu=2400,sigma=350,Cu=10,Co=5;
+  const qVals=[], profits=[];
+  for(let q=1600;q<=3200;q+=50) {
+    let totalProfit=0;
+    for(let s=0;s<2000;s++) {
+      const u1=Math.random()||1e-9, u2=Math.random();
+      const d=mu+sigma*Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+      totalProfit += Math.min(d,q)*Cu - Math.max(0,q-d)*Co;
+    }
+    qVals.push(q); profits.push(Math.round(totalProfit/2000));
+  }
+  const maxP=Math.max(...profits), optQ=qVals[profits.indexOf(maxP)];
+  const sliderEl = document.getElementById('monoq-slider');
+  const initQ = sliderEl ? parseInt(sliderEl.value) : mu;
+  const nearest = qVals.reduce((a,b)=>Math.abs(b-initQ)<Math.abs(a-initQ)?b:a);
+  if(state.activeChart) state.activeChart.destroy();
+  state.activeChart = new Chart(canvas,{
+    type:'line',
+    data:{datasets:[{
+      label:'Ganancia esperada', parsing:false,
+      data:qVals.map((q,i)=>({x:q,y:profits[i]})),
+      borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,0.1)',
+      fill:true,tension:0.4,pointRadius:0,borderWidth:2.5
+    }]},
+    options:{responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{type:'linear',title:{display:true,text:'Q ordenado (camisetas)',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:8},grid:{color:'rgba(255,255,255,0.05)'}},
+        y:{title:{display:true,text:'Ganancia esperada ($)',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:6,callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(255,255,255,0.05)'}}
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>`Ganancia: $${ctx.parsed.y.toLocaleString()}`,title:items=>`Q = ${items[0].parsed.x.toLocaleString()} unidades`}},
+        annotation:{annotations:{
+          opt:{type:'line',xMin:optQ,xMax:optQ,borderColor:'#4ade80',borderWidth:2.5,borderDash:[0,0],
+               label:{display:true,content:'Q* = '+optQ,position:'end',color:'#4ade80',font:{size:12,weight:'bold'},backgroundColor:'rgba(10,14,26,0.8)'}},
+          cur:{type:'line',xMin:nearest,xMax:nearest,borderColor:'#fbbf24',borderWidth:2,borderDash:[7,4],
+               label:{display:true,content:'Q = '+nearest,position:'start',color:'#fbbf24',font:{size:11},backgroundColor:'rgba(10,14,26,0.8)'}}
+        }}
+      }
+    }
+  });
+  state.activeChart._monoData = {qVals, profits, optQ, maxP};
+  updateMonoQDisplay(nearest);
+}
+
+function updateMonoQ(val) {
+  const q = parseInt(val);
+  if (!state.activeChart?._monoData) { initMonoSimChart(); return; }
+  const {qVals} = state.activeChart._monoData;
+  const nearest = qVals.reduce((a,b)=>Math.abs(b-q)<Math.abs(a-q)?b:a);
+  updateMonoQDisplay(nearest);
+  state.activeChart.options.plugins.annotation.annotations.cur.xMin = nearest;
+  state.activeChart.options.plugins.annotation.annotations.cur.xMax = nearest;
+  state.activeChart.options.plugins.annotation.annotations.cur.label.content = 'Q = '+nearest.toLocaleString();
+  state.activeChart.update('none');
+}
+
+function updateMonoQDisplay(q) {
+  if (!state.activeChart?._monoData) return;
+  const {qVals, profits, optQ, maxP} = state.activeChart._monoData;
+  const idx = qVals.indexOf(qVals.reduce((a,b)=>Math.abs(b-q)<Math.abs(a-q)?b:a));
+  const profit = profits[idx] ?? 0;
+  const diff = profit - maxP;
+  const disp = document.getElementById('monoq-display');
+  const pdisp = document.getElementById('monoq-profit');
+  const ddisp = document.getElementById('monoq-diff');
+  if (disp) disp.textContent = q.toLocaleString();
+  if (pdisp) pdisp.textContent = '$'+profit.toLocaleString();
+  if (ddisp) {
+    ddisp.textContent = diff === 0 ? '✓ Q óptimo' : diff.toLocaleString()+' vs Q*';
+    ddisp.style.color = diff === 0 ? 'var(--green)' : 'var(--red)';
+  }
+}
+
+// ════════════════════════════════════════════════════
+// 📖 STAGE CONTENT — HTML de cada etapa
+// ════════════════════════════════════════════════════
+function getStageContent(id) {
+  const C = {
+    intro: `
+      <div class="content-card" style="text-align:center;padding:32px;">
+        <div style="font-size:64px;margin-bottom:12px;">🎮</div>
+        <div style="font-size:22px;font-weight:800;margin-bottom:8px;">¡Bienvenidos a InventarioGame!</div>
+        <div style="color:var(--muted);font-size:14px;line-height:1.8;">Gestión de Inventarios · MBA<br>Hoy tomaremos decisiones reales,<br>apostaremos puntos y veremos quién optimiza mejor.</div>
+      </div>
+      <div class="obj-grid" style="margin-top:12px;">
+        <div class="obj-card"><div class="obj-icon">📦</div><div class="obj-title">Mono Periodo</div><div class="obj-desc">Una sola oportunidad de compra — ¿cuánto pedir?</div></div>
+        <div class="obj-card"><div class="obj-icon">🔄</div><div class="obj-title">Multi Periodo</div><div class="obj-desc">Pedidos recurrentes — encontrar el equilibrio</div></div>
+        <div class="obj-card"><div class="obj-icon">📐</div><div class="obj-title">Determinístico</div><div class="obj-desc">Demanda conocida — el modelo EOQ clásico</div></div>
+        <div class="obj-card"><div class="obj-icon">🎲</div><div class="obj-title">Estocástico</div><div class="obj-desc">Demanda aleatoria — sistemas Q y P</div></div>
+      </div>`,
+
+    objetivos: `
+      <div class="content-card">
+        <h3>Objetivos de la clase</h3>
+        <ul class="step-list">
+          <li><span class="step-num">1</span><span><strong>Estructurar el problema</strong> — Establecer costos y beneficios del inventario</span></li>
+          <li><span class="step-num">2</span><span><strong>Definir una estrategia</strong> — Optimizar decisiones de pedido</span></li>
+          <li><span class="step-num">3</span><span><strong>Validación y pivote</strong> — Calcular, simular y ajustar</span></li>
+        </ul>
+      </div>
+      <div class="content-card">
+        <h3>Estructura de cada módulo</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="highlight-box"><strong>📖 Teoría</strong> — Modelos y fórmulas clave</div>
+          <div class="highlight-box gold"><strong>🤝 En Conjunto</strong> — Resolvemos un ejemplo paso a paso</div>
+          <div class="highlight-box green"><strong>✏️ Ejercicio</strong> — Lo resuelves tú (¡hay puntos en juego!)</div>
+        </div>
+      </div>
+      <div class="highlight-box" style="margin-top:4px;">
+        💡 <strong>Tip de juego:</strong> Antes de cada ejercicio podrás apostar. <span style="color:var(--A)">Normal</span> = sin riesgo. <span style="color:var(--red)">Extremo</span> = 1.5× ganancia o pérdida.
+      </div>`,
+
+    'mono-teoria': `
+      <div class="content-card">
+        <h3>¿Qué es el modelo mono-periodo?</h3>
+        <p>Una empresa debe decidir <strong>cuánto pedir de un producto</strong> que solo se puede comprar <em>una vez</em> antes de conocer la demanda exacta.</p>
+        <p>Si pide de más → le sobra y pierde dinero en remate.<br>Si pide de menos → se queda sin stock y pierde ventas.</p>
+      </div>
+      <div class="content-card">
+        <h3>📅 El ciclo de vida del producto</h3>
+        <svg viewBox="0 0 340 90" style="width:100%;max-height:90px;margin:4px 0;">
+          <!-- timeline bar -->
+          <line x1="20" y1="45" x2="320" y2="45" stroke="#2d3561" stroke-width="3"/>
+          <!-- segments -->
+          <line x1="20" y1="45" x2="130" y2="45" stroke="#60a5fa" stroke-width="5"/>
+          <line x1="130" y1="45" x2="240" y2="45" stroke="#4ade80" stroke-width="5"/>
+          <line x1="240" y1="45" x2="320" y2="45" stroke="#fb923c" stroke-width="5"/>
+          <!-- dots -->
+          <circle cx="20"  cy="45" r="7" fill="#60a5fa"/>
+          <circle cx="130" cy="45" r="7" fill="#4ade80"/>
+          <circle cx="240" cy="45" r="7" fill="#fb923c"/>
+          <circle cx="320" cy="45" r="7" fill="#fbbf24"/>
+          <!-- labels top -->
+          <text x="20"  y="30" fill="#60a5fa" font-size="11" font-weight="bold" text-anchor="middle">COMPRA</text>
+          <text x="185" y="30" fill="#4ade80" font-size="11" font-weight="bold" text-anchor="middle">VENTA TEMPORADA</text>
+          <text x="280" y="30" fill="#fb923c" font-size="11" font-weight="bold" text-anchor="middle">REMATE</text>
+          <!-- labels bottom -->
+          <text x="20"  y="65" fill="#8892b0" font-size="9" text-anchor="middle">Verano</text>
+          <text x="130" y="65" fill="#8892b0" font-size="9" text-anchor="middle">Otoño</text>
+          <text x="240" y="65" fill="#8892b0" font-size="9" text-anchor="middle">Invierno</text>
+          <text x="320" y="65" fill="#8892b0" font-size="9" text-anchor="middle">Fin</text>
+          <!-- icons -->
+          <text x="20"  y="82" font-size="13" text-anchor="middle">🛒</text>
+          <text x="185" y="82" font-size="13" text-anchor="middle">🧢💰</text>
+          <text x="280" y="82" font-size="13" text-anchor="middle">🏷️</text>
+        </svg>
+        <p style="font-size:12px;color:var(--muted);margin-top:4px;">Solo hay <strong>una oportunidad de compra</strong> — la decisión se toma en verano, sin saber la demanda real.</p>
+      </div>
+      <div class="content-card">
+        <h3>🧢 Ejemplo: Gorros de invierno</h3>
+        <table class="data-table">
+          <tr><th>Parámetro</th><th>Valor</th></tr>
+          <tr><td>Demanda estimada</td><td class="val">~N(100, 25)</td></tr>
+          <tr><td>Costo de compra</td><td class="val">$100</td></tr>
+          <tr><td>Precio de venta temporada</td><td class="val">$200</td></tr>
+          <tr><td>Precio de remate</td><td class="val">$80</td></tr>
+        </table>
+        <p style="margin-top:8px;">¿Cuántos gorros comprar? — lo calcularemos con el modelo.</p>
+      </div>`,
+
+    'dist-normal': `
+      <div class="content-card">
+        <h3>Distribución Normal — interactivo</h3>
+        <p>El área bajo la curva hasta z indica la probabilidad de que la demanda sea ≤ a ese nivel.</p>
+        <div class="chart-container" style="height:200px;max-height:200px;"><canvas id="normal-chart" style="max-height:200px;"></canvas></div>
+        <div class="z-slider-wrap">
+          <label style="font-size:12px;color:var(--muted);">Mueve z para ver el área cubierta</label>
+          <input type="range" id="z-slider" min="-3" max="3" step="0.05" value="1.0" oninput="updateZSlider(this.value)">
+          <div class="z-slider-result">
+            <div><span style="font-size:12px;color:var(--muted);">z = </span><span class="z-big" id="z-display">1.0</span></div>
+            <div><span class="pct-big" id="z-pct-display">84.1%</span><span style="font-size:12px;color:var(--muted);"> cubierto</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="z-table">
+        <div class="z-cell"><div class="z-val">z = 1.28</div><div class="z-pct">90%</div><div class="z-desc">servicio</div></div>
+        <div class="z-cell"><div class="z-val">z = 1.65</div><div class="z-pct">95%</div><div class="z-desc">servicio</div></div>
+        <div class="z-cell"><div class="z-val">z = 2.33</div><div class="z-pct">99%</div><div class="z-desc">servicio</div></div>
+      </div>`,
+
+    'cu-co': `
+      <div class="highlight-box" style="margin-bottom:10px;">
+        <strong>Recordatorio — Gorros:</strong> Demanda ~N(100, 25) · Costo $100 · Venta $200 · Remate $80
+      </div>
+      <div class="content-card">
+        <h3>Costo de Subestimar (Cᵤ)</h3>
+        <p>Si pedimos <em>menos</em> de lo que se demanda, perdemos la ganancia de cada unidad no vendida.</p>
+        <div class="formula-box">Cᵤ = Precio de Venta − Costo Unitario</div>
+        <h3 style="margin-top:14px;">Costo de Sobreestimar (C₀)</h3>
+        <p>Si pedimos <em>más</em> de lo que se demanda, perdemos la diferencia entre costo y precio de remate.</p>
+        <div class="formula-box">C₀ = Costo Unitario − Precio de Salvataje</div>
+      </div>
+      <div class="content-card">
+        <h3>Ratio Crítico</h3>
+        <p>El punto donde la ganancia esperada de la última unidad iguala la pérdida esperada:</p>
+        <div class="formula-box">RC = Cᵤ / (C₀ + Cᵤ)</div>
+        <p style="margin-top:8px;">Buscamos z tal que <strong>Φ(z) = RC</strong>, luego:</p>
+        <div class="formula-box">Q* = μ + z · σ</div>
+      </div>
+      <div class="highlight-box gold">
+        <strong>Gorros:</strong> Cᵤ = 200−100 = <span style="color:var(--gold)">$100</span> · C₀ = 100−80 = <span style="color:var(--gold)">$20</span> · RC = 100/120 = <span style="color:var(--gold)">0.833</span> · z ≈ <span style="color:var(--gold)">0.97</span> · Q* ≈ <span style="color:var(--green)">124</span> gorros
+      </div>
+      <div class="content-card" style="margin-top:10px;">
+        <h3>📈 Ganancia esperada según Q — Gorros</h3>
+        <div class="chart-container" style="height:220px;max-height:220px;"><canvas id="cucoprofit-chart" style="max-height:220px;"></canvas></div>
+        <div class="z-slider-wrap" style="margin-top:10px;">
+          <label style="font-size:12px;color:var(--muted);">Mueve Q para ver el impacto en ganancia</label>
+          <input type="range" id="cucoq-slider" min="40" max="175" step="2" value="124" oninput="updateCuCoQ(this.value)">
+          <div class="z-slider-result">
+            <div><span style="font-size:12px;color:var(--muted);">Q = </span><span class="z-big" id="cucoq-display">124</span></div>
+            <div style="text-align:right;">
+              <span class="pct-big" id="cucoq-profit">$0</span>
+              <div style="font-size:12px;font-weight:700;" id="cucoq-diff"></div>
+            </div>
+          </div>
+        </div>
+      </div>`,
+
+    camisetas: `
+      <div class="content-card">
+        <h3>🏆 Problema de las Camisetas</h3>
+        <p>Nuestro equipo participa en un campeonato. Ganamos $10 por camiseta vendida y perdemos $5 por camiseta no vendida.</p>
+        <table class="data-table">
+          <tr><th>Parámetro</th><th>Valor</th></tr>
+          <tr><td>Demanda media</td><td class="val">2.400 camisetas</td></tr>
+          <tr><td>Desviación estándar</td><td class="val">350 camisetas</td></tr>
+          <tr><td>Cᵤ (ganancia/venta)</td><td class="val">$10</td></tr>
+          <tr><td>C₀ (pérdida/sobrante)</td><td class="val">$5</td></tr>
+        </table>
+      </div>
+      <div class="content-card">
+        <h3>Solución paso a paso (en Excel)</h3>
+        <ul class="step-list">
+          <li><span class="step-num">1</span><span>RC = 10/(5+10) = <strong>0.6667</strong></span></li>
+          <li><span class="step-num">2</span><span>z = DISTR.NORM.INV(0.6667, 0, 1) ≈ <strong>0.431</strong></span></li>
+          <li><span class="step-num">3</span><span>Q* = 2400 + 0.431 × 350 = <strong>2.550,7 camisetas</strong></span></li>
+        </ul>
+      </div>`,
+
+    'mono-sim': `
+      <div class="content-card">
+        <h3>¿Por qué Q* = 2.551 es óptimo?</h3>
+        <p>Simulamos 2.000 escenarios de demanda para diferentes valores de Q. El gráfico muestra la ganancia esperada.</p>
+        <div class="chart-container" style="height:230px;max-height:230px;"><canvas id="mono-profit-chart" style="max-height:230px;"></canvas></div>
+        <div class="z-slider-wrap" style="margin-top:10px;">
+          <label style="font-size:12px;color:var(--muted);">Arrastra Q para ver cómo cae la ganancia al alejarte del óptimo</label>
+          <input type="range" id="monoq-slider" min="1600" max="3200" step="50" value="2400" oninput="updateMonoQ(this.value)">
+          <div class="z-slider-result">
+            <div><span style="font-size:12px;color:var(--muted);">Q = </span><span class="z-big" id="monoq-display">2.400</span></div>
+            <div style="text-align:right;">
+              <span class="pct-big" id="monoq-profit">$0</span>
+              <div style="font-size:12px;font-weight:700;margin-top:2px;" id="monoq-diff"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="highlight-box green">
+        <strong>Conclusión:</strong> El Ratio Crítico captura exactamente el trade-off entre quedarse corto y tener excedente. Ningún otro Q genera mayor ganancia esperada.
+      </div>`,
+
+    'eoq-intro': `
+      <div class="content-card">
+        <h3>🔧 Caso Motivador — Ferretería ABC</h3>
+        <p>Una ferretería compra tornillos en lotes. Su política actual de pedidos:</p>
+        <table class="data-table">
+          <tr><th>Parámetro</th><th>Símbolo</th><th>Valor</th></tr>
+          <tr><td>Cantidad ordenada</td><td><strong>Q</strong></td><td class="val">100 u</td></tr>
+          <tr><td>Demanda anual</td><td><strong>D</strong></td><td class="val">5.000 u/año</td></tr>
+          <tr><td>Largo del ciclo</td><td><strong>T = Q/D</strong></td><td class="val">0,02 año ≈ 7 días</td></tr>
+          <tr><td>Costo fijo por pedido</td><td><strong>S</strong></td><td class="val">$100 / orden</td></tr>
+          <tr><td>Costo unitario</td><td><strong>C</strong></td><td class="val">$20 / u</td></tr>
+          <tr><td>Tasa de inventario</td><td><strong>i</strong></td><td class="val">2% anual</td></tr>
+        </table>
+      </div>
+      <div class="content-card">
+        <h3>¿Cuánto cuesta esta política?</h3>
+        <div class="formula-box">Costo pedidos (anual) = S · D/Q = 100 × 50 = <strong style="color:var(--red)">$5.000/año</strong><br>Costo inventario = iC · Q/2 = (0,02×20) × 50 = <strong style="color:var(--A)">$20/año</strong><br><strong>Costo Total = $5.020/año</strong></div>
+        <div class="highlight-box" style="margin-top:10px;">⚠️ Se paga <strong>$5.000/año</strong> en despachos y sólo <strong>$20/año</strong> en inventario — los costos están completamente desequilibrados. ¿Hay un Q óptimo?</div>
+      </div>`,
+
+    'eoq-formulas': `
+      <div class="content-card">
+        <h3>Formulación del costo total</h3>
+        <p>Dos costos se mueven en direcciones opuestas al cambiar Q:</p>
+        <div class="formula-box">TC(Q) = <span style="color:var(--A)">S · D/Q</span> + <span style="color:var(--B)">iC · Q/2</span><br><span style="color:var(--A)">↑ al bajar Q</span> &nbsp;&nbsp;&nbsp; <span style="color:var(--B)">↑ al subir Q</span></div>
+        <p style="margin-top:8px;font-size:13px;color:#c8d0e0;">El mínimo ocurre cuando ambos costos se igualan:</p>
+        <div class="formula-box" style="border-left-color:var(--gold);">S · D/Q* = iC · Q*/2 &nbsp; → &nbsp; <strong>Q* = √(2 · S · D / iC)</strong></div>
+      </div>
+      <div class="content-card">
+        <h3>Aplicando a la Ferretería ABC</h3>
+        <div class="formula-box">iC = 2% × $20 = <strong>$0,40/u/año</strong><br>Q* = √(2 × 100 × 5.000 / 0,40) = √2.500.000 ≈ <strong style="color:var(--green)">1.581 u</strong><br><br>TC(Q = 100)  = 5.000 + 20 = <strong style="color:var(--red)">$5.020/año</strong><br>TC(Q* = 1.581) = √(2 × 0,40 × 100 × 5.000) = <strong style="color:var(--green)">$632/año</strong></div>
+        <div class="highlight-box gold" style="margin-top:10px;">Pasar de Q=100 a Q*=1.581 ahorra <strong>$4.388/año — un 87% menos</strong>. El modelo EOQ es extremadamente poderoso cuando los parámetros están desequilibrados.</div>
+      </div>`,
+
+    'eoq-teoria': `
+      <div class="content-card">
+        <h3>Representación gráfica</h3>
+        <p>Con demanda constante D, el inventario baja linealmente desde Q hasta 0, luego se repone.</p>
+        <div style="background:var(--surf2);border-radius:8px;padding:16px;margin:10px 0;">
+          <svg viewBox="0 0 300 140" style="width:100%;max-height:140px;">
+            <line x1="20" y1="120" x2="290" y2="120" stroke="#8892b0" stroke-width="1.5"/>
+            <line x1="20" y1="20" x2="20" y2="120" stroke="#8892b0" stroke-width="1.5"/>
+            <polyline points="20,30 95,110 95,30 170,110 170,30 245,110" fill="none" stroke="#60a5fa" stroke-width="2.5"/>
+            <line x1="20" y1="30" x2="245" y2="30" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="5" y="33" fill="#fbbf24" font-size="9">Q</text>
+            <text x="5" y="75" fill="#8892b0" font-size="9">Q/2</text>
+            <text x="130" y="135" fill="#8892b0" font-size="9">Tiempo →</text>
+            <text x="40" y="135" fill="#8892b0" font-size="8">← T →</text>
+          </svg>
+        </div>
+        <h3>Notación</h3>
+        <table class="data-table">
+          <tr><td><strong>Q</strong></td><td>Tamaño de la orden</td></tr>
+          <tr><td><strong>D</strong></td><td>Demanda anual</td></tr>
+          <tr><td><strong>T = Q/D</strong></td><td>Largo del ciclo</td></tr>
+          <tr><td><strong>S</strong></td><td>Costo fijo por orden</td></tr>
+          <tr><td><strong>iC</strong></td><td>Costo anual de inventario ($/u/año)</td></tr>
+        </table>
+      </div>
+      <div class="content-card">
+        <h3>Fórmulas</h3>
+        <div class="formula-box">F = S + ½·iC·Q·T &nbsp;(costo por período)<br>TC = F · (1/T) = F · D/Q &nbsp;(costo anual)<br>Q* = √(2·S·D / iC)</div>
+      </div>`,
+
+    gasofa: `
+      <div class="content-card">
+        <h3>⛽ Gasolinera GASOFA</h3>
+        <table class="data-table">
+          <tr><th>Dato</th><th>Valor</th></tr>
+          <tr><td>Demanda mensual</td><td class="val">4.000 litros/mes</td></tr>
+          <tr><td>Demanda anual (D)</td><td class="val">48.000 litros/año</td></tr>
+          <tr><td>Costo por orden (S)</td><td class="val">$7.500</td></tr>
+          <tr><td>Costo inventario (iC)</td><td class="val">$45/litro/año</td></tr>
+        </table>
+      </div>
+      <div class="content-card">
+        <h3>Solución en Excel</h3>
+        <ul class="step-list">
+          <li><span class="step-num">1</span><span>Q* = √(2 × 7.500 × 48.000 / 45) = <strong>4.000 litros</strong></span></li>
+          <li><span class="step-num">2</span><span>Nº pedidos/año = 48.000 / 4.000 = <strong>12 pedidos</strong></span></li>
+          <li><span class="step-num">3</span><span>T = 4.000 / 48.000 = <strong>1/12 año</strong> (≈ 1 mes)</span></li>
+          <li><span class="step-num">4</span><span>F = 7.500 + ½×45×4.000×(1/12) = <strong>$15.000</strong></span></li>
+          <li><span class="step-num">5</span><span>TC = 15.000 × 12 = <strong>$180.000/año</strong></span></li>
+        </ul>
+      </div>`,
+
+    'eoq-costos': `
+      <div class="content-card">
+        <h3>Curvas de Costo — Gasolinera</h3>
+        <div class="chart-container" style="height:320px;max-height:320px;"><canvas id="eoq-chart" style="max-height:320px;"></canvas></div>
+        <p style="font-size:12px;color:var(--muted);margin-top:6px;">El óptimo Q* ocurre donde el costo de pedido = costo de inventario. El costo total es mínimo en ese punto. <strong>(Pasa el cursor sobre la curva para ver valores exactos)</strong></p>
+      </div>`,
+
+    'ej2-pre': ``,
+
+    'eoq-demo': `
+      <div class="content-card">
+        <h3>Propiedad: F* = 2S siempre</h3>
+        <p>Al reemplazar Q* en la fórmula del costo por período:</p>
+        <div class="formula-box">F = S + ½·iC·Q*·T*<br>  = S + ½·iC·Q*·(Q*/D)<br>  = S + (iC·Q*²)/(2D)<br>  = S + (iC·2SD/iC)/(2D)<br>  = S + S = <strong>2S</strong></div>
+        <div class="highlight-box gold" style="margin-top:10px;">
+          ∴ El costo por período óptimo siempre es el doble del costo fijo de pedido.<br>
+          Gasolinera: F* = 2 × $7.500 = <strong>$15.000 ✓</strong>
+        </div>
+      </div>`,
+
+    'eoq-ext': `
+      <div class="content-card">
+        <h3>Extensiones del EOQ</h3>
+        <p><strong>Con ventas pendientes (backorders):</strong> Se permite que la demanda no satisfecha quede como pedido pendiente. El modelo agrega:</p>
+        <ul style="font-size:13px;line-height:2;padding-left:16px;color:#c8d0e0;">
+          <li>π: costo fijo por venta pendiente</li>
+          <li>π': costo por venta pendiente por unidad de tiempo</li>
+        </ul>
+        <div class="formula-box">Q* = √(2SD/iC) · √((iC+π')/π')<br>S* = Q* · iC/(iC+π')</div>
+      </div>
+      <div class="content-card">
+        <h3>Otras extensiones comunes</h3>
+        <ul style="font-size:13px;line-height:2.2;padding-left:16px;color:#c8d0e0;">
+          <li><strong>Descuentos por cantidad:</strong> El proveedor reduce el precio si se pide más. Se evalúan múltiples Q candidatos.</li>
+          <li><strong>Pedidos conjuntos:</strong> Varios productos comparten el costo fijo (como veremos con las lavadoras).</li>
+          <li><strong>Tiempo de entrega determinístico:</strong> Se ajusta el punto de reorden: R = L·D/365.</li>
+        </ul>
+      </div>`,
+
+    'q-teoria': `
+      <div class="content-card">
+        <h3>Sistema Q — Revisión Continua</h3>
+        <p>Se conoce el inventario <strong>en todo momento</strong>. Cuando el stock baja al punto de reorden R, se hace un pedido de Q unidades.</p>
+        <div style="background:var(--surf2);border-radius:8px;padding:12px;margin:10px 0;">
+          <svg viewBox="0 0 300 150" style="width:100%;max-height:150px;">
+            <line x1="20" y1="130" x2="290" y2="130" stroke="#8892b0" stroke-width="1"/>
+            <line x1="20" y1="20" x2="20" y2="130" stroke="#8892b0" stroke-width="1"/>
+            <polyline points="20,40 75,120 75,40 140,90 140,40 210,115 210,40 275,100" fill="none" stroke="#60a5fa" stroke-width="2.5"/>
+            <line x1="20" y1="100" x2="290" y2="100" stroke="#f87171" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <text x="250" y="96" fill="#f87171" font-size="10">R (reorden)</text>
+            <text x="25" y="35" fill="#fbbf24" font-size="9">Q</text>
+            <line x1="75" y1="130" x2="75" y2="110" stroke="#4ade80" stroke-width="1.5"/>
+            <text x="60" y="145" fill="#4ade80" font-size="8">← L →</text>
+          </svg>
+        </div>
+      </div>
+      <div class="content-card">
+        <h3>Notación y fórmulas</h3>
+        <table class="data-table">
+          <tr><td><strong>L</strong></td><td>Lead time (tiempo de entrega)</td></tr>
+          <tr><td><strong>m</strong></td><td>Demanda promedio en periodo L</td></tr>
+          <tr><td><strong>σ</strong></td><td>Desviación estándar en periodo L</td></tr>
+          <tr><td><strong>z</strong></td><td>Factor de seguridad (según nivel de servicio)</td></tr>
+          <tr><td><strong>s = z·σ</strong></td><td>Inventario de seguridad</td></tr>
+          <tr><td><strong>R = m + s</strong></td><td>Punto de reorden</td></tr>
+        </table>
+        <div class="z-table" style="margin-top:10px;">
+          <div class="z-cell"><div class="z-val">z=1.28</div><div class="z-pct">90%</div></div>
+          <div class="z-cell"><div class="z-val">z=1.65</div><div class="z-pct">95%</div></div>
+          <div class="z-cell"><div class="z-val">z=2.33</div><div class="z-pct">99%</div></div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:6px;">La desviación en el periodo L es: σ_L = σ_día · √L</p>
+      </div>`,
+
+    'q-ejemplo': `
+      <div class="content-card">
+        <h3>📦 Ejemplo: Cajas (Sistema Q)</h3>
+        <table class="data-table">
+          <tr><th>Dato</th><th>Valor</th></tr>
+          <tr><td>Demanda diaria media</td><td class="val">200 cajas/día</td></tr>
+          <tr><td>Desviación diaria</td><td class="val">150 cajas</td></tr>
+          <tr><td>Lead time (L)</td><td class="val">4 días</td></tr>
+          <tr><td>Nivel de servicio</td><td class="val">95%</td></tr>
+          <tr><td>S</td><td class="val">$20/orden</td></tr>
+          <tr><td>i</td><td class="val">20%/año</td></tr>
+          <tr><td>C</td><td class="val">$10/caja</td></tr>
+          <tr><td>Días activos</td><td class="val">250 días/año</td></tr>
+        </table>
+      </div>
+      <div class="content-card">
+        <h3>Solución</h3>
+        <ul class="step-list">
+          <li><span class="step-num">1</span><span>D anual = 200×250 = 50.000. Q* = √(2×20×50.000/(0.2×10)) = <strong>1.000 cajas</strong></span></li>
+          <li><span class="step-num">2</span><span>m_L = 200×4 = <strong>800 cajas</strong></span></li>
+          <li><span class="step-num">3</span><span>σ_L = 150×√4 = <strong>300 cajas</strong></span></li>
+          <li><span class="step-num">4</span><span>z (95%) = 1.645 → s = 1.645×300 = <strong>494 cajas</strong></span></li>
+          <li><span class="step-num">5</span><span>R = 800 + 494 = <strong>1.294 cajas</strong></span></li>
+        </ul>
+        <div class="highlight-box green" style="margin-top:8px;">Pedir 1.000 cajas cada vez que el inventario baje a 1.294</div>
+      </div>`,
+
+    'p-teoria': `
+      <div class="content-card">
+        <h3>Sistema P — Revisión Periódica</h3>
+        <p>El inventario se revisa cada <strong>P días fijos</strong>. Se ordena lo necesario para llevar el stock a un nivel objetivo T.</p>
+        <div style="background:var(--surf2);border-radius:8px;padding:12px;margin:10px 0;">
+          <svg viewBox="0 0 300 150" style="width:100%;max-height:150px;">
+            <line x1="20" y1="130" x2="290" y2="130" stroke="#8892b0" stroke-width="1"/>
+            <line x1="20" y1="20" x2="20" y2="130" stroke="#8892b0" stroke-width="1"/>
+            <line x1="20" y1="25" x2="290" y2="25" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="240" y="20" fill="#fbbf24" font-size="10">T (objetivo)</text>
+            <polyline points="20,25 80,100 80,25 160,110 160,25 240,95" fill="none" stroke="#c084fc" stroke-width="2.5"/>
+            <line x1="80" y1="130" x2="80" y2="115" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="3,2"/>
+            <line x1="160" y1="130" x2="160" y2="115" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="3,2"/>
+            <text x="30" y="145" fill="#60a5fa" font-size="8">← P →← P →</text>
+          </svg>
+        </div>
+      </div>
+      <div class="content-card">
+        <h3>Fórmulas</h3>
+        <div class="formula-box">P = Q*/D = √(2S / iC·D)<br>m' = D · (P + L)<br>σ' = σ_día · √(P + L)<br>T = m' + z·σ'</div>
+        <div class="highlight-box" style="margin-top:8px;">
+          <strong>Importante:</strong> En sistema P la incertidumbre cubre P+L días (no solo L), por lo que el inventario de seguridad es mayor que en sistema Q.
+        </div>
+      </div>`,
+
+    'p-ejemplo': `
+      <div class="content-card">
+        <h3>Ejemplo Cajas — Sistema P</h3>
+        <p>Usando los mismos datos del ejemplo anterior (Q*=1.000, D=200/día, 95% servicio):</p>
+        <ul class="step-list">
+          <li><span class="step-num">1</span><span>P = 1.000/200 = <strong>5 días</strong></span></li>
+          <li><span class="step-num">2</span><span>m' = 200×(5+4) = <strong>1.800 cajas</strong></span></li>
+          <li><span class="step-num">3</span><span>σ' = 150×√9 = <strong>450 cajas</strong></span></li>
+          <li><span class="step-num">4</span><span>s' = 1.645×450 = <strong>742 cajas</strong></span></li>
+          <li><span class="step-num">5</span><span>T = 1.800 + 742 = <strong>2.542 cajas</strong></span></li>
+        </ul>
+        <div class="highlight-box green" style="margin-top:8px;">
+          Revisar cada 5 días y llevar el inventario a 2.542 cajas.
+        </div>
+      </div>`,
+
+    'p-vs-q': `
+      <div class="content-card">
+        <h3>P vs Q — Comparación</h3>
+        <table class="data-table">
+          <tr><th>Dimensión</th><th style="color:var(--A)">Sistema Q (Continuo)</th><th style="color:var(--purple)">Sistema P (Periódico)</th></tr>
+          <tr><td>Revisión</td><td>Continua</td><td>Cada P días</td></tr>
+          <tr><td>Pedido</td><td>Q fijo cuando R</td><td>Variable hasta T</td></tr>
+          <tr><td>Inv. Seguridad</td><td>Cubre L días</td><td>Cubre P+L días</td></tr>
+          <tr><td>Costo operativo</td><td>Mayor (monitoreo)</td><td>Menor (revisiones fijas)</td></tr>
+        </table>
+      </div>
+      <div class="content-card">
+        <h3>¿Cuánto vale pasar de P a Q?</h3>
+        <p>Para las cajas (ejemplo anterior):</p>
+        <table class="data-table">
+          <tr><th>Sistema</th><th>Inv. Seguridad</th><th>Costo annual adicional</th></tr>
+          <tr><td>Q (Continuo)</td><td class="val">494 cajas</td><td class="val">$988/año</td></tr>
+          <tr><td>P (Periódico)</td><td class="val">742 cajas</td><td class="val">$1.484/año</td></tr>
+        </table>
+        <div class="highlight-box gold" style="margin-top:10px;">
+          La diferencia de $496/año es lo máximo que pagarías en costos de monitoreo para implementar el sistema Q en lugar del P.
+        </div>
+      </div>`,
+
+    final: `
+      <div class="content-card" style="text-align:center;padding:32px;">
+        <div style="font-size:64px;margin-bottom:12px;">🏆</div>
+        <div style="font-size:22px;font-weight:800;margin-bottom:8px;">¡Clase terminada!</div>
+        <div style="color:var(--muted);font-size:14px;line-height:1.8;">Gracias por participar.<br>¡El Gamemaster revelará los resultados finales!</div>
+      </div>`
+  };
+  return C[id] || `<div class="content-card"><p style="color:var(--muted);">Contenido en preparación...</p></div>`;
+}
+
+function getExerciseProblem(exId) {
+  const P = {
+    ej1: `<div class="content-card">
+      <h3>🍦 Ejercicio 1 — Helados en Festival</h3>
+      <p>Una empresa vende helados artesanales en un festival de verano de una semana. Basados en años anteriores, la demanda sigue una distribución normal con <strong>media 800</strong> y <strong>desviación estándar 120</strong>.</p>
+      <table class="data-table">
+        <tr><td>Costo de fabricación</td><td class="val">$1.200 / unidad</td></tr>
+        <tr><td>Precio de venta</td><td class="val">$2.500 / unidad</td></tr>
+        <tr><td>Precio de remate al cierre</td><td class="val">$600 / unidad</td></tr>
+      </table>
+      <p style="margin-top:10px;font-weight:700;">¿Cuántos helados debe producir la empresa?</p>
+      <div class="highlight-box" style="margin-top:8px;font-size:12px;">Calcula Cᵤ, C₀, RC, z y Q* en el Excel (pestaña Mono Periodo), luego ingresa Q* aquí.</div>
+    </div>`,
+    ej2: `<div class="content-card">
+      <h3>🫧 Ejercicio 2 — Lavadoras MH</h3>
+      <p>Un comerciante planifica su política de abastecimiento de lavadoras marca MH.</p>
+      <table class="data-table">
+        <tr><th>Modelo</th><th>Demanda Anual</th><th>Costo Compra</th></tr>
+        <tr><td>Y</td><td class="val">5.000 u/año</td><td class="val">$10.000/u</td></tr>
+        <tr><td>Z</td><td class="val">3.500 u/año</td><td class="val">$18.000/u</td></tr>
+      </table>
+      <table class="data-table" style="margin-top:8px;">
+        <tr><td>Costo fijo por orden</td><td class="val">$10.000</td></tr>
+        <tr><td>Costo de capital anual</td><td class="val">10%</td></tr>
+      </table>
+      <div class="highlight-box" style="margin-top:8px;font-size:12px;">
+        Completa la pestaña "Ejercicio 1" en Excel. El modelo YZ asume un costo unitario promedio ponderado.<br>
+        Recuerda: <strong>Costo por período = 2S = $20.000</strong> para todos los modelos (siempre al usar Q*).
+      </div>
+    </div>`,
+    ej3: `<div class="content-card">
+      <h3>🏭 Ejercicio 3 — Sistema Q (Empresa Manufacturera)</h3>
+      <p>Una empresa realiza actualmente una orden anual de 48.000 unidades. Determina su política óptima bajo el Sistema de Revisión Continua.</p>
+      <table class="data-table">
+        <tr><td>Demanda anual</td><td class="val">48.000 u/año</td></tr>
+        <tr><td>Costo unitario</td><td class="val">$20/u</td></tr>
+        <tr><td>Costo de almacenaje (i)</td><td class="val">15%/año</td></tr>
+        <tr><td>Desviación estándar anual</td><td class="val">1.500 u</td></tr>
+        <tr><td>Lead Time</td><td class="val">5 días</td></tr>
+        <tr><td>Días al año</td><td class="val">250 días</td></tr>
+        <tr><td>Nivel de servicio</td><td class="val">95%</td></tr>
+        <tr><td>Costo por orden (S)</td><td class="val">$12</td></tr>
+      </table>
+      <div class="highlight-box" style="margin-top:8px;font-size:12px;">
+        <strong>Tip:</strong> σ_anual = √(días) × σ_diaria → despeja σ_diaria. Luego σ_LT = σ_diaria × √L
+      </div>
+    </div>`,
+    ej4: `<div class="content-card">
+      <h3>🔄 Ejercicio 4 — Sistema P (misma empresa)</h3>
+      <p>Usando los mismos datos del Ejercicio 3, aplica ahora el Sistema de Revisión Periódica.</p>
+      <table class="data-table">
+        <tr><td>Demanda anual</td><td class="val">48.000 u/año</td></tr>
+        <tr><td>Costo unitario</td><td class="val">$20/u</td></tr>
+        <tr><td>Costo almacenaje</td><td class="val">15%/año</td></tr>
+        <tr><td>Desviación anual</td><td class="val">1.500 u</td></tr>
+        <tr><td>Lead Time</td><td class="val">5 días</td></tr>
+        <tr><td>Días al año</td><td class="val">250 días</td></tr>
+        <tr><td>Nivel de servicio</td><td class="val">95%</td></tr>
+        <tr><td>Costo por orden</td><td class="val">$12</td></tr>
+      </table>
+      <div class="highlight-box" style="margin-top:8px;font-size:12px;">
+        <strong>Nota:</strong> P = Q*/D_diaria ≈ 3.2 días. Para calcular m', usamos P≈3 (redondeado para simplificar), dando m' = D_diaria × (3+5) = 1.536 u. La desviación que aplica aquí es σ_LT (no P+L) según la pauta.
+      </div>
+    </div>`
+  };
+  return P[exId] || '';
+}
+
+// ════════════════════════════════════════════════════
+// 🚀 INIT
+// ════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  // Populate reaction panel template
+  document.getElementById('reaction-panel').innerHTML = REACTIONS.map(r=>`<button class="r-btn" onclick="sendReaction('${r}')">${r}</button>`).join('');
+  initFirebase();
+});
+</script>
+</body>
+</html>
