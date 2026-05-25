@@ -339,6 +339,7 @@ input:focus,select:focus{border-color:var(--A);}
       <button onclick="advanceStage(1)">Siguiente →</button>
     </div>
     <button class="btn-sm" onclick="showLeaderboard()">📊 Leaderboard</button>
+    <button class="btn-sm" style="background:rgba(248,113,113,.15);border-color:var(--red);color:var(--red);" onclick="resetGame()">🔄 Reiniciar Juego</button>
   </div>
   <div class="stage-progress" id="stage-progress" style="padding:10px 20px;background:var(--surf);border-bottom:1px solid var(--border);"></div>
   <div class="gm-body">
@@ -685,6 +686,15 @@ function subscribeAll() {
       showEventOverlay(next.activeEvent);
     }
     if (state.isGM) { renderGM(); return; }
+    // Detect game reset — send student back to register
+    if (prev && next.resetAt && prev.resetAt !== next.resetAt) {
+      state.unsubs.forEach(u => u());
+      state.unsubs = [];
+      state.student = null;
+      populateRegister();
+      showScreen('screen-register');
+      return;
+    }
     // For students: only fully re-render when something meaningful changes
     const stageChanged   = !prev || prev.stage !== next.stage;
     const exChanged      = JSON.stringify(prev?.openExercise) !== JSON.stringify(next.openExercise);
@@ -942,13 +952,6 @@ function renderGM() {
     document.getElementById('gm-reveal-btn').style.display = (exOpen||revealed) ? 'block':'none';
     subscribeAnswers(stage.exerciseId);
   }
-  // Events
-  const used = sess.eventsUsed || {};
-  ['ruleta','chaos','smite','bomba'].forEach(ev=>{
-    const btn = document.getElementById('ev-'+ev);
-    if (btn) btn.disabled = !!used[ev];
-    if (btn && used[ev]) btn.classList.add('used');
-  });
 }
 
 function buildStageProgress() {
@@ -1047,11 +1050,24 @@ function calculateScore(ex, ans) {
 }
 
 // ════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
+// 🔄 RESET GAME
+// ════════════════════════════════════════════════════
+async function resetGame() {
+  if (!confirm('¿Reiniciar el juego? Todos los alumnos deberán volver a registrarse.')) return;
+  const snap = await db.collection('students').get();
+  const batch = db.batch();
+  snap.forEach(doc => { if (!doc.data().isGM) batch.delete(doc.ref); });
+  await batch.commit();
+  await db.collection('meta').doc('session').set({
+    stage: 0, openExercise: null, revealAnswers: false,
+    eventsUsed: {}, activeEvent: null, resetAt: Date.now()
+  });
+}
+
 // ⚡ EVENTS
 // ════════════════════════════════════════════════════
 async function triggerEvent(type) {
-  const used = state.session?.eventsUsed || {};
-  if (used[type]) return;
   if (type === 'smite') { showSmitePicker(); return; }
   if (type === 'ruleta') { showRuletaWheel(); return; }
   let data = {};
@@ -1074,8 +1090,7 @@ async function triggerEvent(type) {
     data = { targetAlias:target?.alias, targetIcon:target?.icon };
   }
   const activeEvent = { type, data, triggeredAt: Date.now() };
-  const update = { activeEvent, [`eventsUsed.${type}`]:true };
-  await db.collection('meta').doc('session').update(update);
+  await db.collection('meta').doc('session').update({ activeEvent });
   setTimeout(async ()=>{ await db.collection('meta').doc('session').update({activeEvent:null}); }, 5000);
 }
 
@@ -1155,7 +1170,7 @@ async function confirmRuleta() {
   await db.collection('students').doc(ruletaTarget.id).update({ score:firebase.firestore.FieldValue.increment(ruletaPts) });
   const data = { targetAlias:ruletaTarget.alias, targetIcon:ruletaTarget.icon, pts:ruletaPts };
   const activeEvent = { type:'ruleta', data, triggeredAt: Date.now() };
-  await db.collection('meta').doc('session').update({ activeEvent, 'eventsUsed.ruleta':true });
+  await db.collection('meta').doc('session').update({ activeEvent });
   setTimeout(async ()=>{ await db.collection('meta').doc('session').update({activeEvent:null}); }, 5000);
   // Reset spin button for next use
   const btn = document.getElementById('ruleta-spin-btn');
@@ -1177,7 +1192,7 @@ async function applySmite(uid, alias, icon) {
   closeOverlay('overlay-smite');
   await db.collection('students').doc(uid).update({ score:firebase.firestore.FieldValue.increment(-25) });
   const activeEvent = { type:'smite', data:{ targetAlias:alias, targetIcon:icon, pts:-25 }, triggeredAt:Date.now() };
-  await db.collection('meta').doc('session').update({ activeEvent, 'eventsUsed.smite':true });
+  await db.collection('meta').doc('session').update({ activeEvent });
   setTimeout(async ()=>{ await db.collection('meta').doc('session').update({activeEvent:null}); }, 4000);
 }
 
