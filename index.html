@@ -223,7 +223,7 @@ input:focus,select:focus{border-color:var(--A);}
 .event-btn{padding:10px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surf2);color:var(--text);cursor:pointer;font-size:15px;font-weight:600;transition:.15s;}
 .event-btn:hover:not(:disabled){border-color:var(--gold);}
 .event-btn:disabled{opacity:.35;cursor:default;}
-.event-btn.used{opacity:.3;text-decoration:line-through;}
+.event-btn.used{opacity:.6;}
 .gm-ex-open-btn{width:100%;padding:12px;border-radius:8px;border:none;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;}
 .gm-ex-open-btn.open{background:rgba(74,222,128,.15);border:1px solid var(--green);color:var(--green);}
 .gm-ex-open-btn.close{background:rgba(248,113,113,.15);border:1px solid var(--red);color:var(--red);}
@@ -418,7 +418,7 @@ input:focus,select:focus{border-color:var(--A);}
     </div>
   </div>
   <div class="events-bar">
-    <span style="font-size:12px;color:var(--muted);align-self:center;">Eventos (1 uso c/u):</span>
+    <span style="font-size:12px;color:var(--muted);align-self:center;">Eventos:</span>
     <button class="event-btn" id="ev-ruleta" onclick="triggerEvent('ruleta')">🎰 Ruleta</button>
     <button class="event-btn" id="ev-chaos" onclick="triggerEvent('chaos')">🔀 Chaos</button>
     <button class="event-btn" id="ev-smite" onclick="triggerEvent('smite')">⚡ Smite</button>
