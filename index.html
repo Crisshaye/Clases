@@ -241,6 +241,21 @@ input:focus,select:focus{border-color:var(--A);}
 /* ── SIMULATION ── */
 .sim-result{background:var(--surf2);border-radius:8px;padding:12px;font-size:13px;margin-top:10px;}
 
+/* ── POLL ── */
+.poll-opt-btn{width:100%;padding:12px 14px;border-radius:8px;border:2px solid var(--border);background:var(--surf2);color:var(--text);cursor:pointer;font-size:14px;font-weight:600;text-align:left;margin-bottom:8px;transition:.15s;display:flex;align-items:center;gap:8px;}
+.poll-opt-btn:hover:not(:disabled){border-color:var(--purple);}
+.poll-opt-btn.voted{border-color:var(--green);background:rgba(74,222,128,0.08);}
+/* ── CONTRACT ── */
+.contract-card{background:linear-gradient(135deg,rgba(100,0,0,0.18),rgba(10,14,26,0));border:1px solid rgba(239,68,68,0.35);border-radius:12px;padding:20px;text-align:center;margin-top:12px;}
+.contract-sign-btn{padding:12px 24px;background:linear-gradient(135deg,#7f1d1d,#dc2626);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:800;cursor:pointer;transition:.15s;}
+.contract-sign-btn:hover{transform:scale(1.04);}
+.contract-refuse-btn{padding:12px 20px;background:var(--surf2);border:1px solid var(--red);border-radius:10px;color:var(--red);font-size:13px;font-weight:700;cursor:pointer;transition:.15s;}
+/* ── DIST ESTIMATE ── */
+.dist-est-btn{width:100%;padding:10px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--purple),var(--A));color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;}
+/* ── INV SIM ── */
+.inv-sim-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;margin-top:8px;}
+.inv-sim-legend span{display:flex;align-items:center;gap:4px;}
+
 /* ── RESPONSIVENESS ── */
 @media(max-width:480px){
   .obj-grid{grid-template-columns:1fr;}
@@ -358,6 +373,19 @@ input:focus,select:focus{border-color:var(--A);}
           </div>
           <div style="margin-top:10px;font-size:12px;color:var(--muted);">Respondieron: <span id="gm-answered-count" style="color:var(--green);font-weight:700;">0</span> / <span id="gm-total-count">0</span></div>
           <div id="gm-answers-list" style="margin-top:8px;"></div>
+        </div>
+      </div>
+      <div id="gm-dist-panel" style="display:none;">
+        <div class="gm-ex-panel">
+          <div class="gm-ex-title">📊 Estimaciones de los alumnos (Gorros)</div>
+          <div style="height:130px;position:relative;"><canvas id="dist-estimates-gm-chart"></canvas></div>
+          <div id="dist-estimates-list" style="margin-top:8px;max-height:160px;overflow-y:auto;"></div>
+        </div>
+      </div>
+      <div id="gm-poll-panel" style="display:none;">
+        <div class="gm-ex-panel">
+          <div class="gm-ex-title">🗳️ Votación — Sistema Q</div>
+          <div id="gm-poll-results" style="margin-top:8px;"></div>
         </div>
       </div>
     </div>
@@ -523,8 +551,8 @@ const STAGES = [
   { id:'mono-teoria',  type:'theory',   gm:'Mono Periodo - Teoría', title:'Modelo Mono Periodo' },
   { id:'dist-normal',  type:'theory',   gm:'Distribución Normal',title:'Distribución Normal' },
   { id:'cu-co',        type:'theory',   gm:'Cu / Co / CR',       title:'Costos y Ratio Crítico' },
-  { id:'camisetas',    type:'together', gm:'Ejemplo Camisetas',  title:'Ejemplo: Camisetas del Campeonato' },
-  { id:'mono-sim',     type:'together', gm:'Simulación Q*',      title:'Simulación: ¿Por qué Q* es óptimo?' },
+  { id:'camisetas',     type:'together', gm:'Camisetas — Parámetros', title:'Ejemplo: Camisetas del Campeonato' },
+  { id:'camisetas-sol',type:'together', gm:'Camisetas — Solución',  title:'Solución: Camisetas del Campeonato' },
   { id:'ej1',          type:'exercise', gm:'Ejercicio 1 ⭐',     title:'Ejercicio 1 — Mono Periodo', exerciseId:'ej1' },
   { id:'eoq-intro',    type:'theory',   gm:'Multi-Periodo Intro',title:'Modelos Multi-Periodo' },
   { id:'eoq-formulas', type:'theory',   gm:'EOQ Fórmulas + Q*',  title:'Formulación y Cantidad Óptima' },
@@ -552,7 +580,8 @@ const state = {
   session: null, allStudents: {}, allAnswers: {},
   selectedIcon: null, selectedAlias: null,
   reactionPanelOpen: false, reactionCooldown: false,
-  activeChart: null, unsubs: []
+  activeChart: null, _distChart: null, unsubs: [],
+  distEstimates: {}, polls: {}
 };
 
 // ════════════════════════════════════════════════════
@@ -719,7 +748,19 @@ function subscribeAll() {
       updateTopbar();
     }
   });
-  state.unsubs.push(u1, u2);
+  // Dist estimates (for dist-normal stage interaction)
+  const uDE = db.collection('distEstimates').onSnapshot(snap => {
+    state.distEstimates = {};
+    snap.forEach(d => { state.distEstimates[d.id] = d.data(); });
+    if (state.isGM) renderGMDistPanel();
+  });
+  // Polls (for q-teoria stage interaction)
+  const uPoll = db.collection('polls').where('stageId','==','q-teoria').onSnapshot(snap => {
+    state.polls = {};
+    snap.forEach(d => { state.polls[d.id] = d.data(); });
+    if (state.isGM) renderGMPollPanel();
+  });
+  state.unsubs.push(u1, u2, uDE, uPoll);
 }
 
 function subscribeAnswers(exerciseId) {
@@ -952,6 +993,14 @@ function renderGM() {
     document.getElementById('gm-reveal-btn').style.display = (exOpen||revealed) ? 'block':'none';
     subscribeAnswers(stage.exerciseId);
   }
+  // Dist estimates panel (dist-normal stage)
+  const isDistNormal = stage?.id === 'dist-normal';
+  document.getElementById('gm-dist-panel').style.display = isDistNormal ? 'block' : 'none';
+  if (isDistNormal) renderGMDistPanel();
+  // Poll panel (q-teoria stage)
+  const isQTeo = stage?.id === 'q-teoria';
+  document.getElementById('gm-poll-panel').style.display = isQTeo ? 'block' : 'none';
+  if (isQTeo) renderGMPollPanel();
 }
 
 function buildStageProgress() {
@@ -989,11 +1038,28 @@ function renderGMStudentList() {
 function renderGMAnswers(exerciseId) {
   const answers = Object.values(state.allAnswers);
   const total = Object.values(state.allStudents).filter(s=>!s.isGM).length;
+  const ex = EXERCISES[exerciseId];
+  const revealed = state.session?.revealAnswers && state.session?.openExercise?.exerciseId === exerciseId;
   document.getElementById('gm-answered-count').textContent = answers.length;
   document.getElementById('gm-total-count').textContent = total;
   document.getElementById('gm-answers-list').innerHTML = answers.map(a=>{
     const s = state.allStudents[a.uid];
-    return `<div class="answer-row"><span>${s?.icon||'?'} ${s?.alias||'?'}</span><span class="bet-tag ${a.bet}">${a.bet==='extreme'?'🚀':'🎯'}</span></div>`;
+    const fields = ex?.fields.map(f => {
+      const sv = parseFloat(a.value?.[f.key]);
+      let color = 'var(--muted)';
+      if (revealed) {
+        const diff = Math.abs(sv - f.correct);
+        color = diff <= f.tol ? 'var(--green)' : (diff <= f.tol*2 ? 'var(--gold)' : 'var(--red)');
+      }
+      return `<span style="font-size:10px;color:${color};">${f.key}=${isNaN(sv)?'?':sv.toFixed(1)}</span>`;
+    }).join(' ');
+    return `<div class="answer-row" style="flex-direction:column;align-items:flex-start;gap:2px;padding:6px 0;">
+      <div style="display:flex;justify-content:space-between;width:100%;">
+        <span style="font-size:13px;">${s?.icon||'?'} ${s?.alias||'?'}</span>
+        <span class="bet-tag ${a.bet}">${a.bet==='extreme'?'🚀':'🎯'}</span>
+      </div>
+      <div style="line-height:1.8;">${fields||''}</div>
+    </div>`;
   }).join('');
 }
 
@@ -1335,7 +1401,8 @@ function initStageCharts(stageId) {
   if (stageId === 'dist-normal') { const s=document.getElementById('z-slider'); initNormalChart(s?parseFloat(s.value):1.0); }
   if (stageId === 'cu-co') initCuCoChart();
   if (stageId === 'eoq-costos') initEOQChart();
-  if (stageId === 'mono-sim') initMonoSimChart();
+  if (stageId === 'camisetas-sol') initMonoSimChart();
+  if (stageId === 'p-ejemplo') initPSimChart();
 }
 
 function normalPDF(z) { return Math.exp(-0.5*z*z)/Math.sqrt(2*Math.PI); }
@@ -1379,6 +1446,10 @@ function updateZSlider(val) {
   const pctDisp = document.getElementById('z-pct-display');
   if (disp) disp.textContent = z.toFixed(2);
   if (pctDisp) pctDisp.textContent = pct + '%';
+  const preview = document.getElementById('dist-z-preview');
+  const qPreview = document.getElementById('dist-q-preview');
+  if (preview) preview.textContent = z.toFixed(2);
+  if (qPreview) qPreview.textContent = Math.round(100 + z * 25);
   // Lazy-init chart if it was never created (e.g. slider moved before timeout)
   if (!state.activeChart) { initNormalChart(z); return; }
   if (state.activeChart.data.datasets.length > 1) {
@@ -1577,6 +1648,182 @@ function updateMonoQDisplay(q) {
 }
 
 // ════════════════════════════════════════════════════
+// 😈 INTERACCIONES DE ETAPAS
+// ════════════════════════════════════════════════════
+function signContract() {
+  const btns = document.getElementById('contract-btns');
+  const signed = document.getElementById('contract-signed');
+  if (btns) btns.style.display = 'none';
+  if (signed) signed.style.display = 'block';
+}
+function refuseContract() {
+  const btn = document.getElementById('refuse-btn');
+  if (!btn) return;
+  btn.textContent = '🤔 Reconsiderando...';
+  btn.disabled = true;
+  setTimeout(() => {
+    if (btn) btn.textContent = '😈 Convenciéndose...';
+    setTimeout(() => signContract(), 1200);
+  }, 900);
+}
+
+async function submitDistEstimate() {
+  const slider = document.getElementById('z-slider');
+  if (!slider) return;
+  const z = parseFloat(slider.value);
+  const Q = Math.round(100 + z * 25);
+  await db.collection('distEstimates').doc(state.uid).set({
+    uid: state.uid, z, Q,
+    alias: state.student.alias, icon: state.student.icon,
+    teamId: state.student.teamId,
+    submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  const wrap = document.getElementById('dist-submit-wrap');
+  const sent = document.getElementById('dist-estimate-sent');
+  if (wrap) wrap.style.display = 'none';
+  if (sent) sent.style.display = 'block';
+}
+
+function renderGMDistPanel() {
+  const list = document.getElementById('dist-estimates-list');
+  if (!list) return;
+  const estimates = Object.values(state.distEstimates || {}).sort((a,b)=>a.z-b.z);
+  if (!estimates.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:12px;padding:4px 0;">Esperando estimaciones...</p>';
+  } else {
+    list.innerHTML = estimates.map(e => {
+      const Q = Math.round(100 + e.z * 25);
+      const col = e.teamId==='A'?'var(--A)':'var(--B)';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);font-size:11px;">
+        <span>${e.icon} ${e.alias}</span>
+        <span style="color:${col};font-size:10px;">${TEAMS[e.teamId]?.name||''}</span>
+        <span style="color:var(--purple);font-weight:700;">z=${e.z.toFixed(2)} → Q=${Q}</span>
+      </div>`;
+    }).join('');
+  }
+  renderDistEstimatesChart(estimates);
+}
+
+function renderDistEstimatesChart(estimates) {
+  const canvas = document.getElementById('dist-estimates-gm-chart');
+  if (!canvas) return;
+  if (state._distChart) { try{state._distChart.destroy();}catch(e){} state._distChart=null; }
+  const curveData = [];
+  for(let z=-3.5;z<=3.5;z+=0.1) curveData.push({x:Math.round(z*100)/100, y:normalPDF(z)});
+  const annotations = {
+    optQ:{type:'line',xMin:0.97,xMax:0.97,borderColor:'#4ade80',borderWidth:2,borderDash:[4,4],
+          label:{display:true,content:'Q*',position:'start',color:'#4ade80',font:{size:9},backgroundColor:'rgba(10,14,26,0.8)'}}
+  };
+  estimates.forEach((e,i) => {
+    annotations['e'+i] = {type:'line',xMin:e.z,xMax:e.z,borderColor:'#fbbf24',borderWidth:1.5,
+      label:{display:true,content:e.icon,position:'start',color:'#fbbf24',font:{size:10},backgroundColor:'rgba(10,14,26,0.8)'}};
+  });
+  state._distChart = new Chart(canvas, {
+    type:'line',
+    data:{datasets:[{data:curveData,borderColor:'rgba(96,165,250,0.9)',borderWidth:2,fill:true,
+      backgroundColor:'rgba(96,165,250,0.1)',pointRadius:0,tension:0.4,parsing:false}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:200},parsing:false,
+      scales:{x:{type:'linear',min:-3.5,max:3.5,ticks:{color:'#8892b0',maxTicksLimit:7},grid:{color:'rgba(255,255,255,0.05)'}},y:{display:false}},
+      plugins:{legend:{display:false},annotation:{annotations}}}
+  });
+}
+
+const POLL_OPTIONS = [
+  {key:'Q',label:'Sistema Q (Revisión Continua)',icon:'🔄'},
+  {key:'P',label:'Sistema P (Revisión Periódica)',icon:'📅'},
+  {key:'ninguno',label:'Ninguno — no necesitamos inventario',icon:'🤷'},
+  {key:'jefe',label:'Lo que diga mi jefe 😅',icon:'👔'}
+];
+async function submitPoll(optKey) {
+  await db.collection('polls').doc('q-teoria_'+state.uid).set({
+    uid: state.uid, option: optKey, stageId: 'q-teoria',
+    alias: state.student.alias, icon: state.student.icon,
+    submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  document.querySelectorAll('.poll-opt-btn').forEach(b=>{b.disabled=true;b.style.opacity='0.4';});
+  const sel = document.querySelector(`.poll-opt-btn[data-opt="${optKey}"]`);
+  if(sel){sel.style.opacity='1';sel.classList.add('voted');}
+  const sent = document.getElementById('poll-sent');
+  if(sent) sent.style.display='block';
+}
+function renderGMPollPanel() {
+  const container = document.getElementById('gm-poll-results');
+  if (!container) return;
+  const votes = Object.values(state.polls || {});
+  if (!votes.length) { container.innerHTML='<p style="color:var(--muted);font-size:12px;">Sin votos aún...</p>'; return; }
+  const counts = {};
+  POLL_OPTIONS.forEach(o=>counts[o.key]=0);
+  votes.forEach(v=>{ if(counts[v.option]!==undefined) counts[v.option]++; });
+  const total = votes.length;
+  container.innerHTML = POLL_OPTIONS.map(o=>{
+    const c=counts[o.key]||0; const pct=total?Math.round(c/total*100):0;
+    return `<div style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+        <span>${o.icon} ${o.label}</span><span style="color:var(--gold);font-weight:700;">${c} (${pct}%)</span>
+      </div>
+      <div style="background:var(--surf2);border-radius:4px;height:8px;overflow:hidden;">
+        <div style="background:var(--purple);height:100%;width:${pct}%;transition:width .4s;"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function initPSimChart() {
+  const canvas = document.getElementById('p-sim-chart');
+  if (!canvas) return;
+  const D=200, P=5, L=4, Tlvl=2542, IS=742;
+  const days=[], invData=[], revPoints=[], delPoints=[];
+  let inv=Tlvl;
+  const pending=[];
+  for(let day=0;day<=35;day++){
+    pending.filter(o=>o.arrival===day).forEach(o=>{inv+=o.qty;});
+    for(let i=pending.length-1;i>=0;i--) if(pending[i].arrival===day) pending.splice(i,1);
+    inv=Math.max(0,inv-D);
+    days.push(day);
+    invData.push(Math.round(inv));
+    if((day+1)%P===0){
+      const Q=Math.max(0,Tlvl-inv);
+      if(Q>0) pending.push({arrival:day+1+L,qty:Q});
+      revPoints.push(day);
+    }
+  }
+  if(state.activeChart){try{state.activeChart.destroy();}catch(e){}state.activeChart=null;}
+  const annotations={
+    tLine:{type:'line',yMin:Tlvl,yMax:Tlvl,borderColor:'#fbbf24',borderWidth:2,borderDash:[6,4],
+      label:{display:true,content:'T = '+Tlvl.toLocaleString()+' (nivel objetivo)',position:'end',color:'#fbbf24',font:{size:11,weight:'bold'},backgroundColor:'rgba(10,14,26,0.85)'}},
+    isLine:{type:'line',yMin:IS,yMax:IS,borderColor:'#f87171',borderWidth:2,borderDash:[4,4],
+      label:{display:true,content:'IS = '+IS.toLocaleString()+' (stock seguridad)',position:'start',color:'#f87171',font:{size:11,weight:'bold'},backgroundColor:'rgba(10,14,26,0.85)'}}
+  };
+  revPoints.forEach((d,i)=>{
+    annotations['rev'+i]={type:'line',xMin:d,xMax:d,borderColor:'rgba(74,222,128,0.6)',borderWidth:1.5,borderDash:[3,3],
+      label:{display:i===0,content:'Revisión',position:'start',color:'#4ade80',font:{size:10},backgroundColor:'rgba(10,14,26,0.8)'}};
+    const del=d+L+1;
+    if(del<=35) annotations['del'+i]={type:'line',xMin:del,xMax:del,borderColor:'rgba(96,165,250,0.6)',borderWidth:1.5,borderDash:[3,3],
+      label:{display:i===0,content:'Llegada (L='+L+'d)',position:'end',color:'#60a5fa',font:{size:10},backgroundColor:'rgba(10,14,26,0.8)'}};
+  });
+  state.activeChart = new Chart(canvas,{
+    type:'line',
+    data:{labels:days,datasets:[{
+      label:'Inventario (cajas)',data:invData,
+      borderColor:'#c084fc',backgroundColor:'rgba(192,132,252,0.12)',
+      borderWidth:2.5,fill:true,pointRadius:2,tension:0.15
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{
+        x:{title:{display:true,text:'Día',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:12},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{title:{display:true,text:'Cajas',color:'#8892b0'},min:0,max:Tlvl+300,
+           ticks:{color:'#8892b0',callback:v=>v.toLocaleString()},grid:{color:'rgba(255,255,255,0.04)'}}
+      },
+      plugins:{
+        legend:{labels:{color:'#e8ecf5',font:{size:12}}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y.toLocaleString()} cajas`,title:items=>`Día ${items[0].label}`}},
+        annotation:{annotations}
+      }
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════
 // 📖 STAGE CONTENT — HTML de cada etapa
 // ════════════════════════════════════════════════════
 function getStageContent(id) {
@@ -1613,6 +1860,22 @@ function getStageContent(id) {
       </div>
       <div class="highlight-box" style="margin-top:4px;">
         💡 <strong>Tip de juego:</strong> Antes de cada ejercicio podrás apostar. <span style="color:var(--A)">Normal</span> = sin riesgo. <span style="color:var(--red)">Extremo</span> = 1.5× ganancia o pérdida.
+      </div>
+      <div class="contract-card">
+        <div style="font-size:44px;margin-bottom:8px;">😈📜</div>
+        <h3 style="color:var(--red);margin-bottom:8px;">Contrato de Participación</h3>
+        <p style="font-size:11px;color:var(--muted);font-style:italic;line-height:1.7;margin-bottom:12px;">
+          Yo, el/la abajo firmante, acepto voluntariamente dedicar mis neuronas al estudio de la Gestión de Inventarios. Me comprometo a calcular Q*, soportar el z-score, no quejarme de los costos de holding, y acatar las decisiones del Ratio Crítico aunque no me gusten. El incumplimiento implica perder puntos en la Ruleta ♾️
+        </p>
+        <div id="contract-signed" style="display:none;padding:12px;background:rgba(74,222,128,0.1);border-radius:8px;border:1px solid rgba(74,222,128,0.3);">
+          <div style="font-size:28px;">✅</div>
+          <div style="font-size:14px;font-weight:700;color:var(--green);margin-top:4px;">¡Contrato firmado con sangre tinta roja!</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Tu alma pertenece a los modelos de inventario por el resto de la clase.</div>
+        </div>
+        <div id="contract-btns" style="display:flex;gap:10px;justify-content:center;margin-top:12px;">
+          <button onclick="signContract()" class="contract-sign-btn">😈 ACEPTO el contrato</button>
+          <button onclick="refuseContract()" id="refuse-btn" class="contract-refuse-btn">🚫 No acepto</button>
+        </div>
       </div>`,
 
     'mono-teoria': `
@@ -1667,7 +1930,7 @@ function getStageContent(id) {
       <div class="content-card">
         <h3>Distribución Normal — interactivo</h3>
         <p>El área bajo la curva hasta z indica la probabilidad de que la demanda sea ≤ a ese nivel.</p>
-        <div class="chart-container" style="height:200px;max-height:200px;"><canvas id="normal-chart" style="max-height:200px;"></canvas></div>
+        <div class="chart-container" style="height:240px;max-height:240px;"><canvas id="normal-chart" style="max-height:240px;"></canvas></div>
         <div class="z-slider-wrap">
           <label style="font-size:12px;color:var(--muted);">Mueve z para ver el área cubierta</label>
           <input type="range" id="z-slider" min="-3" max="3" step="0.05" value="1.0" oninput="updateZSlider(this.value)">
@@ -1681,6 +1944,20 @@ function getStageContent(id) {
         <div class="z-cell"><div class="z-val">z = 1.28</div><div class="z-pct">90%</div><div class="z-desc">servicio</div></div>
         <div class="z-cell"><div class="z-val">z = 1.65</div><div class="z-pct">95%</div><div class="z-desc">servicio</div></div>
         <div class="z-cell"><div class="z-val">z = 2.33</div><div class="z-pct">99%</div><div class="z-desc">servicio</div></div>
+      </div>
+      <div class="content-card" style="margin-top:10px;border-color:rgba(251,191,36,0.3);">
+        <h3 style="color:var(--gold);">📍 ¿Dónde te situarías tú?</h3>
+        <p style="font-size:13px;">Pensando en los <strong>Gorros de Invierno</strong> (μ=100, σ=25, Cᵤ=$100, C₀=$20) — mueve el z al valor que crees óptimo y envía tu estimación. ¡El profesor verá las respuestas en tiempo real!</p>
+        <div style="background:var(--surf2);border-radius:8px;padding:10px;margin-top:8px;text-align:center;">
+          <span style="font-size:13px;color:var(--muted);">Tu z: </span><span style="font-size:20px;font-weight:800;color:var(--purple);" id="dist-z-preview">1.00</span>
+          <span style="font-size:13px;color:var(--muted);margin-left:12px;">→ Q = </span><span style="font-size:20px;font-weight:800;color:var(--gold);" id="dist-q-preview">125</span><span style="font-size:12px;color:var(--muted);"> gorros</span>
+        </div>
+        <div id="dist-submit-wrap" style="margin-top:8px;">
+          <button class="dist-est-btn" onclick="submitDistEstimate()">📤 Enviar mi estimación</button>
+        </div>
+        <div id="dist-estimate-sent" style="display:none;padding:10px;background:rgba(74,222,128,0.1);border-radius:8px;border:1px solid rgba(74,222,128,0.3);margin-top:8px;text-align:center;">
+          <span style="color:var(--green);font-weight:700;font-size:14px;">✅ Estimación enviada — el profesor ya la ve</span>
+        </div>
       </div>`,
 
     'cu-co': `
@@ -1707,7 +1984,7 @@ function getStageContent(id) {
       </div>
       <div class="content-card" style="margin-top:10px;">
         <h3>📈 Ganancia esperada según Q — Gorros</h3>
-        <div class="chart-container" style="height:220px;max-height:220px;"><canvas id="cucoprofit-chart" style="max-height:220px;"></canvas></div>
+        <div class="chart-container" style="height:270px;max-height:270px;"><canvas id="cucoprofit-chart" style="max-height:270px;"></canvas></div>
         <div class="z-slider-wrap" style="margin-top:10px;">
           <label style="font-size:12px;color:var(--muted);">Mueve Q para ver el impacto en ganancia</label>
           <input type="range" id="cucoq-slider" min="40" max="175" step="2" value="124" oninput="updateCuCoQ(this.value)">
@@ -1724,29 +2001,37 @@ function getStageContent(id) {
     camisetas: `
       <div class="content-card">
         <h3>🏆 Problema de las Camisetas</h3>
-        <p>Nuestro equipo participa en un campeonato. Ganamos $10 por camiseta vendida y perdemos $5 por camiseta no vendida.</p>
-        <table class="data-table">
+        <p>Nuestro equipo participa en un campeonato de fútbol. El organizador encarga camisetas <em>una sola vez</em> antes de conocer la demanda real. Si vende todas gana dinero, si le sobran pierde dinero en remates.</p>
+        <table class="data-table" style="margin-top:12px;">
           <tr><th>Parámetro</th><th>Valor</th></tr>
-          <tr><td>Demanda media</td><td class="val">2.400 camisetas</td></tr>
-          <tr><td>Desviación estándar</td><td class="val">350 camisetas</td></tr>
-          <tr><td>Cᵤ (ganancia/venta)</td><td class="val">$10</td></tr>
-          <tr><td>C₀ (pérdida/sobrante)</td><td class="val">$5</td></tr>
+          <tr><td>Demanda media (μ)</td><td class="val">2.400 camisetas</td></tr>
+          <tr><td>Desviación estándar (σ)</td><td class="val">350 camisetas</td></tr>
+          <tr><td>Cᵤ — ganancia por camiseta vendida</td><td class="val">$10</td></tr>
+          <tr><td>C₀ — pérdida por camiseta sobrante</td><td class="val">$5</td></tr>
         </table>
       </div>
-      <div class="content-card">
-        <h3>Solución paso a paso (en Excel)</h3>
-        <ul class="step-list">
-          <li><span class="step-num">1</span><span>RC = 10/(5+10) = <strong>0.6667</strong></span></li>
-          <li><span class="step-num">2</span><span>z = DISTR.NORM.INV(0.6667, 0, 1) ≈ <strong>0.431</strong></span></li>
-          <li><span class="step-num">3</span><span>Q* = 2400 + 0.431 × 350 = <strong>2.550,7 camisetas</strong></span></li>
-        </ul>
+      <div class="highlight-box gold" style="margin-top:8px;">
+        <strong>Pregunta:</strong> ¿Cuántas camisetas debería encargar el organizador para maximizar su ganancia esperada?
+      </div>
+      <div class="highlight-box" style="margin-top:8px;">
+        🔢 <strong>¡Calcula en tu mente!</strong> ¿Qué RC te imaginas? ¿Pedirías más o menos que la media?<br>
+        <span style="font-size:11px;color:var(--muted);">La solución aparecerá en la siguiente diapositiva...</span>
       </div>`,
 
-    'mono-sim': `
+    'camisetas-sol': `
       <div class="content-card">
-        <h3>¿Por qué Q* = 2.551 es óptimo?</h3>
+        <h3>Solución paso a paso</h3>
+        <ul class="step-list">
+          <li><span class="step-num">1</span><span>RC = Cᵤ/(C₀+Cᵤ) = 10/(5+10) = <strong>0.6667</strong></span></li>
+          <li><span class="step-num">2</span><span>z = DISTR.NORM.INV(0.6667, 0, 1) ≈ <strong>0.431</strong></span></li>
+          <li><span class="step-num">3</span><span>Q* = μ + z·σ = 2.400 + 0.431×350 = <strong>2.550,7 camisetas</strong></span></li>
+        </ul>
+        <div class="highlight-box gold" style="margin-top:8px;">Interpretar: Al RC=0.667, conviene cubrir más demanda que perder ventas. Se pide más que la media porque el costo de quedarse corto (Cᵤ) supera el de sobrar (C₀).</div>
+      </div>
+      <div class="content-card">
+        <h3>📊 ¿Por qué Q* = 2.551 es óptimo? — Simulación</h3>
         <p>Simulamos 2.000 escenarios de demanda para diferentes valores de Q. El gráfico muestra la ganancia esperada.</p>
-        <div class="chart-container" style="height:230px;max-height:230px;"><canvas id="mono-profit-chart" style="max-height:230px;"></canvas></div>
+        <div class="chart-container" style="height:280px;max-height:280px;"><canvas id="mono-profit-chart" style="max-height:280px;"></canvas></div>
         <div class="z-slider-wrap" style="margin-top:10px;">
           <label style="font-size:12px;color:var(--muted);">Arrastra Q para ver cómo cae la ganancia al alejarte del óptimo</label>
           <input type="range" id="monoq-slider" min="1600" max="3200" step="50" value="2400" oninput="updateMonoQ(this.value)">
@@ -1764,6 +2049,37 @@ function getStageContent(id) {
       </div>`,
 
     'eoq-intro': `
+      <div class="content-card">
+        <h3>📐 Representación gráfica del inventario multi-periodo</h3>
+        <p style="font-size:13px;">Con demanda constante D, el inventario baja linealmente desde Q hasta 0, luego llega un nuevo pedido. Este patrón se repite indefinidamente.</p>
+        <div style="background:var(--surf2);border-radius:8px;padding:16px;margin:10px 0;">
+          <svg viewBox="0 0 340 175" style="width:100%;max-height:175px;">
+            <line x1="24" y1="155" x2="320" y2="155" stroke="#8892b0" stroke-width="1.5"/>
+            <line x1="24" y1="20" x2="24" y2="155" stroke="#8892b0" stroke-width="1.5"/>
+            <polyline points="24,35 110,140 110,35 196,140 196,35 282,140" fill="none" stroke="#60a5fa" stroke-width="3"/>
+            <line x1="24" y1="35" x2="282" y2="35" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,4"/>
+            <line x1="24" y1="87" x2="282" y2="87" stroke="#8892b0" stroke-width="1" stroke-dasharray="3,4" opacity="0.5"/>
+            <text x="8" y="38" fill="#fbbf24" font-size="11" font-weight="bold">Q</text>
+            <text x="3" y="91" fill="#8892b0" font-size="10">Q/2</text>
+            <text x="155" y="172" fill="#8892b0" font-size="10">Tiempo →</text>
+            <text x="52" y="172" fill="#8892b0" font-size="9">←— T —→</text>
+            <text x="138" y="172" fill="#8892b0" font-size="9">←— T —→</text>
+            <text x="220" y="172" fill="#8892b0" font-size="9">←— T —→</text>
+            <!-- Arrows showing ordering -->
+            <line x1="110" y1="140" x2="110" y2="35" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.7"/>
+            <line x1="196" y1="140" x2="196" y2="35" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.7"/>
+            <text x="104" y="12" fill="#4ade80" font-size="9">Pedido</text>
+            <text x="190" y="12" fill="#4ade80" font-size="9">Pedido</text>
+          </svg>
+        </div>
+        <table class="data-table" style="margin-top:6px;">
+          <tr><td><strong>Q</strong></td><td>Tamaño de la orden (lo que buscamos optimizar)</td></tr>
+          <tr><td><strong>D</strong></td><td>Demanda anual</td></tr>
+          <tr><td><strong>T = Q/D</strong></td><td>Largo del ciclo</td></tr>
+          <tr><td><strong>S</strong></td><td>Costo fijo por orden</td></tr>
+          <tr><td><strong>iC</strong></td><td>Costo de inventario por unidad por año</td></tr>
+        </table>
+      </div>
       <div class="content-card">
         <h3>🔧 Caso Motivador — Ferretería ABC</h3>
         <p>Una ferretería compra tornillos en lotes. Su política actual de pedidos:</p>
@@ -1802,15 +2118,18 @@ function getStageContent(id) {
         <h3>Representación gráfica</h3>
         <p>Con demanda constante D, el inventario baja linealmente desde Q hasta 0, luego se repone.</p>
         <div style="background:var(--surf2);border-radius:8px;padding:16px;margin:10px 0;">
-          <svg viewBox="0 0 300 140" style="width:100%;max-height:140px;">
-            <line x1="20" y1="120" x2="290" y2="120" stroke="#8892b0" stroke-width="1.5"/>
-            <line x1="20" y1="20" x2="20" y2="120" stroke="#8892b0" stroke-width="1.5"/>
-            <polyline points="20,30 95,110 95,30 170,110 170,30 245,110" fill="none" stroke="#60a5fa" stroke-width="2.5"/>
-            <line x1="20" y1="30" x2="245" y2="30" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,3"/>
-            <text x="5" y="33" fill="#fbbf24" font-size="9">Q</text>
-            <text x="5" y="75" fill="#8892b0" font-size="9">Q/2</text>
-            <text x="130" y="135" fill="#8892b0" font-size="9">Tiempo →</text>
-            <text x="40" y="135" fill="#8892b0" font-size="8">← T →</text>
+          <svg viewBox="0 0 320 175" style="width:100%;max-height:175px;">
+            <line x1="24" y1="155" x2="305" y2="155" stroke="#8892b0" stroke-width="1.5"/>
+            <line x1="24" y1="18" x2="24" y2="155" stroke="#8892b0" stroke-width="1.5"/>
+            <polyline points="24,32 110,142 110,32 196,142 196,32 282,142" fill="none" stroke="#60a5fa" stroke-width="3"/>
+            <line x1="24" y1="32" x2="282" y2="32" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,4"/>
+            <line x1="24" y1="87" x2="282" y2="87" stroke="#8892b0" stroke-width="1" stroke-dasharray="3,4" opacity="0.5"/>
+            <text x="6" y="35" fill="#fbbf24" font-size="11" font-weight="bold">Q</text>
+            <text x="3" y="91" fill="#8892b0" font-size="10">Q/2</text>
+            <text x="150" y="170" fill="#8892b0" font-size="10">Tiempo →</text>
+            <text x="48" y="170" fill="#8892b0" font-size="9">←— T —→</text>
+            <text x="134" y="170" fill="#8892b0" font-size="9">←— T —→</text>
+            <text x="220" y="170" fill="#8892b0" font-size="9">←— T —→</text>
           </svg>
         </div>
         <h3>Notación</h3>
@@ -1829,7 +2148,17 @@ function getStageContent(id) {
 
     gasofa: `
       <div class="content-card">
-        <h3>⛽ Gasolinera GASOFA</h3>
+        <h3>⛽ Enunciado — Gasolinera GASOFA SAC</h3>
+        <p>La estación de servicios <strong>GASOFA SAC</strong> vende cada mes <strong>4.000 litros de gasolina</strong>. Cada vez que se llenan los tanques, el distribuidor cobra <strong>$7.500 pesos</strong> por el servicio. El costo anual de almacenamiento es de <strong>$45 pesos/litro</strong>.</p>
+        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="highlight-box" style="text-align:center;"><div style="font-size:11px;color:var(--muted);">¿Cuántos litros ordenar?</div><div style="font-weight:700;color:var(--A);">Q* = ?</div></div>
+          <div class="highlight-box" style="text-align:center;"><div style="font-size:11px;color:var(--muted);">¿Cuántos pedidos/año?</div><div style="font-weight:700;color:var(--A);">N = ?</div></div>
+          <div class="highlight-box" style="text-align:center;"><div style="font-size:11px;color:var(--muted);">¿Tiempo óptimo entre pedidos?</div><div style="font-weight:700;color:var(--A);">T* = ?</div></div>
+          <div class="highlight-box" style="text-align:center;"><div style="font-size:11px;color:var(--muted);">¿Costo por periodo y anual?</div><div style="font-weight:700;color:var(--A);">F*, TC = ?</div></div>
+        </div>
+      </div>
+      <div class="content-card">
+        <h3>⛽ Datos — Gasolinera GASOFA</h3>
         <table class="data-table">
           <tr><th>Dato</th><th>Valor</th></tr>
           <tr><td>Demanda mensual</td><td class="val">4.000 litros/mes</td></tr>
@@ -1852,7 +2181,7 @@ function getStageContent(id) {
     'eoq-costos': `
       <div class="content-card">
         <h3>Curvas de Costo — Gasolinera</h3>
-        <div class="chart-container" style="height:320px;max-height:320px;"><canvas id="eoq-chart" style="max-height:320px;"></canvas></div>
+        <div class="chart-container" style="height:370px;max-height:370px;"><canvas id="eoq-chart" style="max-height:370px;"></canvas></div>
         <p style="font-size:12px;color:var(--muted);margin-top:6px;">El óptimo Q* ocurre donde el costo de pedido = costo de inventario. El costo total es mínimo en ese punto. <strong>(Pasa el cursor sobre la curva para ver valores exactos)</strong></p>
       </div>`,
 
@@ -1892,16 +2221,23 @@ function getStageContent(id) {
       <div class="content-card">
         <h3>Sistema Q — Revisión Continua</h3>
         <p>Se conoce el inventario <strong>en todo momento</strong>. Cuando el stock baja al punto de reorden R, se hace un pedido de Q unidades.</p>
-        <div style="background:var(--surf2);border-radius:8px;padding:12px;margin:10px 0;">
-          <svg viewBox="0 0 300 150" style="width:100%;max-height:150px;">
-            <line x1="20" y1="130" x2="290" y2="130" stroke="#8892b0" stroke-width="1"/>
-            <line x1="20" y1="20" x2="20" y2="130" stroke="#8892b0" stroke-width="1"/>
-            <polyline points="20,40 75,120 75,40 140,90 140,40 210,115 210,40 275,100" fill="none" stroke="#60a5fa" stroke-width="2.5"/>
-            <line x1="20" y1="100" x2="290" y2="100" stroke="#f87171" stroke-width="1.5" stroke-dasharray="5,3"/>
-            <text x="250" y="96" fill="#f87171" font-size="10">R (reorden)</text>
-            <text x="25" y="35" fill="#fbbf24" font-size="9">Q</text>
-            <line x1="75" y1="130" x2="75" y2="110" stroke="#4ade80" stroke-width="1.5"/>
-            <text x="60" y="145" fill="#4ade80" font-size="8">← L →</text>
+        <div style="background:var(--surf2);border-radius:8px;padding:16px;margin:10px 0;">
+          <svg viewBox="0 0 320 190" style="width:100%;max-height:190px;">
+            <line x1="24" y1="165" x2="305" y2="165" stroke="#8892b0" stroke-width="1.5"/>
+            <line x1="24" y1="18" x2="24" y2="165" stroke="#8892b0" stroke-width="1.5"/>
+            <polyline points="24,40 90,148 90,40 163,105 163,40 236,140 236,40 305,118" fill="none" stroke="#60a5fa" stroke-width="3"/>
+            <line x1="24" y1="120" x2="305" y2="120" stroke="#f87171" stroke-width="2" stroke-dasharray="6,4"/>
+            <text x="255" y="115" fill="#f87171" font-size="11" font-weight="bold">R — Punto de Reorden</text>
+            <text x="27" y="36" fill="#fbbf24" font-size="11" font-weight="bold">Q</text>
+            <!-- Lead time bracket -->
+            <line x1="90" y1="165" x2="90" y2="148" stroke="#4ade80" stroke-width="2"/>
+            <line x1="112" y1="165" x2="112" y2="155" stroke="#4ade80" stroke-width="1.5" stroke-dasharray="3,2"/>
+            <line x1="90" y1="178" x2="112" y2="178" stroke="#4ade80" stroke-width="1.5"/>
+            <text x="88" y="188" fill="#4ade80" font-size="10">←L→</text>
+            <!-- Labels -->
+            <text x="140" y="182" fill="#8892b0" font-size="10">Tiempo →</text>
+            <!-- Arrow at reorder -->
+            <text x="60" y="115" fill="#f87171" font-size="9">⬆ Pedido!</text>
           </svg>
         </div>
       </div>
@@ -1921,6 +2257,16 @@ function getStageContent(id) {
           <div class="z-cell"><div class="z-val">z=2.33</div><div class="z-pct">99%</div></div>
         </div>
         <p style="font-size:12px;color:var(--muted);margin-top:6px;">La desviación en el periodo L es: σ_L = σ_día · √L</p>
+      </div>
+      <div class="content-card" style="border-color:rgba(192,132,252,0.4);">
+        <h3 style="color:var(--purple);">🗳️ Encuesta Rápida — ¿Qué sistema usarías?</h3>
+        <p style="font-size:13px;">En tu empresa actual (o la que te imaginas trabajando), ¿qué sistema de inventario implementarías?</p>
+        <div style="margin-top:12px;" id="poll-container">
+          ${POLL_OPTIONS.map(o=>`<button class="poll-opt-btn" data-opt="${o.key}" onclick="submitPoll('${o.key}')">${o.icon} ${o.label}</button>`).join('')}
+        </div>
+        <div id="poll-sent" style="display:none;padding:8px;background:rgba(74,222,128,0.1);border-radius:8px;border:1px solid rgba(74,222,128,0.3);font-size:13px;font-weight:700;color:var(--green);text-align:center;">
+          ✅ ¡Voto registrado! El profesor ve los resultados en tiempo real.
+        </div>
       </div>`,
 
     'q-ejemplo': `
@@ -1954,16 +2300,24 @@ function getStageContent(id) {
       <div class="content-card">
         <h3>Sistema P — Revisión Periódica</h3>
         <p>El inventario se revisa cada <strong>P días fijos</strong>. Se ordena lo necesario para llevar el stock a un nivel objetivo T.</p>
-        <div style="background:var(--surf2);border-radius:8px;padding:12px;margin:10px 0;">
-          <svg viewBox="0 0 300 150" style="width:100%;max-height:150px;">
-            <line x1="20" y1="130" x2="290" y2="130" stroke="#8892b0" stroke-width="1"/>
-            <line x1="20" y1="20" x2="20" y2="130" stroke="#8892b0" stroke-width="1"/>
-            <line x1="20" y1="25" x2="290" y2="25" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,3"/>
-            <text x="240" y="20" fill="#fbbf24" font-size="10">T (objetivo)</text>
-            <polyline points="20,25 80,100 80,25 160,110 160,25 240,95" fill="none" stroke="#c084fc" stroke-width="2.5"/>
-            <line x1="80" y1="130" x2="80" y2="115" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="3,2"/>
-            <line x1="160" y1="130" x2="160" y2="115" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="3,2"/>
-            <text x="30" y="145" fill="#60a5fa" font-size="8">← P →← P →</text>
+        <div style="background:var(--surf2);border-radius:8px;padding:16px;margin:10px 0;">
+          <svg viewBox="0 0 320 195" style="width:100%;max-height:195px;">
+            <line x1="24" y1="165" x2="305" y2="165" stroke="#8892b0" stroke-width="1.5"/>
+            <line x1="24" y1="18" x2="24" y2="165" stroke="#8892b0" stroke-width="1.5"/>
+            <line x1="24" y1="28" x2="305" y2="28" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6,4"/>
+            <text x="230" y="22" fill="#fbbf24" font-size="11" font-weight="bold">T — Nivel Objetivo</text>
+            <polyline points="24,28 100,118 100,28 186,128 186,28 272,115" fill="none" stroke="#c084fc" stroke-width="3"/>
+            <!-- Period markers -->
+            <line x1="100" y1="165" x2="100" y2="148" stroke="#60a5fa" stroke-width="2" stroke-dasharray="3,2"/>
+            <line x1="186" y1="165" x2="186" y2="148" stroke="#60a5fa" stroke-width="2" stroke-dasharray="3,2"/>
+            <!-- P brackets -->
+            <line x1="24" y1="178" x2="100" y2="178" stroke="#60a5fa" stroke-width="1.5"/>
+            <line x1="100" y1="178" x2="186" y2="178" stroke="#60a5fa" stroke-width="1.5"/>
+            <text x="48" y="190" fill="#60a5fa" font-size="10">←— P —→</text>
+            <text x="130" y="190" fill="#60a5fa" font-size="10">←— P —→</text>
+            <!-- Revisar -->
+            <text x="87" y="12" fill="#60a5fa" font-size="9">Revisar</text>
+            <text x="173" y="12" fill="#60a5fa" font-size="9">Revisar</text>
           </svg>
         </div>
       </div>
@@ -1988,6 +2342,22 @@ function getStageContent(id) {
         </ul>
         <div class="highlight-box green" style="margin-top:8px;">
           Revisar cada 5 días y llevar el inventario a 2.542 cajas.
+        </div>
+      </div>
+      <div class="content-card">
+        <h3>📊 Simulación del Inventario — Sistema P</h3>
+        <p style="font-size:13px;">Observa cómo evoluciona el inventario día a día: baja continuamente por la demanda y salta cada vez que llega un pedido (L=4 días después de la revisión).</p>
+        <div class="chart-container" style="height:310px;max-height:310px;">
+          <canvas id="p-sim-chart" style="max-height:310px;"></canvas>
+        </div>
+        <div class="inv-sim-legend">
+          <span><span style="display:inline-block;width:14px;height:3px;background:#fbbf24;vertical-align:middle;"></span> Nivel objetivo T = 2.542</span>
+          <span><span style="display:inline-block;width:14px;height:3px;background:#f87171;vertical-align:middle;"></span> Stock de seguridad IS = 742</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(74,222,128,0.5);border-radius:2px;vertical-align:middle;"></span> Revisión (c/5 días)</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(96,165,250,0.5);border-radius:2px;vertical-align:middle;"></span> Llegada pedido (L=4)</span>
+        </div>
+        <div class="highlight-box" style="margin-top:8px;font-size:12px;">
+          💡 El inventario nunca baja de IS=742 en condiciones promedio. Los "saltos" corresponden a la llegada de pedidos ordenados 4 días antes.
         </div>
       </div>`,
 
@@ -2057,19 +2427,22 @@ function getExerciseProblem(exId) {
     </div>`,
     ej3: `<div class="content-card">
       <h3>🏭 Ejercicio 3 — Sistema Q (Empresa Manufacturera)</h3>
-      <p>Una empresa realiza actualmente una orden anual de 48.000 unidades. Determina su política óptima bajo el Sistema de Revisión Continua.</p>
-      <table class="data-table">
-        <tr><td>Demanda anual</td><td class="val">48.000 u/año</td></tr>
-        <tr><td>Costo unitario</td><td class="val">$20/u</td></tr>
-        <tr><td>Costo de almacenaje (i)</td><td class="val">15%/año</td></tr>
+      <p>Una empresa de manufactura realiza una orden anual de <strong>48.000 unidades</strong> a un precio de <strong>$20 por unidad</strong>. El costo de almacenaje es del <strong>15%</strong> y el costo de realizar una orden es de <strong>$12 por orden</strong>.</p>
+      <p style="margin-top:6px;">La empresa observa que en promedio la demanda anual son <strong>48.000 unidades</strong>. Más aún, observa que las desviaciones estándar diarias son similares y que la <strong>desviación estándar anual es de 1.500 unidades</strong>.</p>
+      <p style="margin-top:6px;">El proveedor se demora <strong>5 días</strong> en la entrega, la empresa funciona <strong>250 días al año</strong>. Considere un nivel de seguridad del <strong>95%</strong>.</p>
+      <table class="data-table" style="margin-top:10px;">
+        <tr><th>Parámetro</th><th>Valor</th></tr>
+        <tr><td>Demanda anual (D)</td><td class="val">48.000 u/año</td></tr>
+        <tr><td>Precio unitario (C)</td><td class="val">$20/u</td></tr>
+        <tr><td>Costo de almacenaje (i)</td><td class="val">15%/año → iC = $3/u/año</td></tr>
         <tr><td>Desviación estándar anual</td><td class="val">1.500 u</td></tr>
-        <tr><td>Lead Time</td><td class="val">5 días</td></tr>
+        <tr><td>Lead Time (L)</td><td class="val">5 días</td></tr>
         <tr><td>Días al año</td><td class="val">250 días</td></tr>
-        <tr><td>Nivel de servicio</td><td class="val">95%</td></tr>
+        <tr><td>Nivel de servicio</td><td class="val">95% → z = 1.645</td></tr>
         <tr><td>Costo por orden (S)</td><td class="val">$12</td></tr>
       </table>
       <div class="highlight-box" style="margin-top:8px;font-size:12px;">
-        <strong>Tip:</strong> σ_anual = √(días) × σ_diaria → despeja σ_diaria. Luego σ_LT = σ_diaria × √L
+        <strong>Tip:</strong> σ_anual = √250 × σ_diaria → despeja σ_diaria primero. Luego σ_LT = σ_diaria × √L
       </div>
     </div>`,
     ej4: `<div class="content-card">
