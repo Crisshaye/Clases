@@ -528,6 +528,17 @@ const EXERCISES = {
       { key:'R',    label:'Punto de Reorden (1 decimal)',       correct:1308.9, tol:2.0 }
     ]
   },
+  ej5: {
+    basePoints: 3000,
+    fields: [
+      { key:'b_carne',  label:'Coef. b — Precio Carne (4 dec)',       correct:1.0207, tol:0.05  },
+      { key:'R2',       label:'R² del modelo (4 dec)',                 correct:0.9764, tol:0.02  },
+      { key:'Ft13',     label:'Pronóstico t=13 (2 dec)',               correct:43.22,  tol:2.0   },
+      { key:'Danual',   label:'Demanda anual pronosticada (2 dec)',     correct:562.60, tol:10.0  },
+      { key:'Qopt',     label:'Q* EOQ (2 dec)',                        correct:167.72, tol:5.0   },
+      { key:'R_reord',  label:'Punto de reorden R (2 dec)',            correct:27.43,  tol:2.0   }
+    ]
+  },
   ej4: {
     basePoints: 2000,
     fields: [
@@ -569,6 +580,9 @@ const STAGES = [
   { id:'p-ejemplo',    type:'together', gm:'Ejemplo P',          title:'Ejemplo: Sistema P — Cajas' },
   { id:'p-vs-q',       type:'theory',   gm:'P vs Q + Costo',     title:'Comparación P vs Q' },
   { id:'ej4',          type:'exercise', gm:'Ejercicio 4 ⭐',     title:'Ejercicio 4 — Sistema P', exerciseId:'ej4' },
+  { id:'combo-intro',  type:'theory',   gm:'🔗 Bonus — La Cadena',  title:'Bonus: La Cadena Completa' },
+  { id:'combo-data',   type:'together', gm:'🔗 Datos FRISCA',       title:'FRISCA — Datos e Historia' },
+  { id:'ej5',          type:'exercise', gm:'Ejercicio 5 🌟',        title:'Ejercicio Final — Pronóstico + Inventario', exerciseId:'ej5' },
   { id:'final',        type:'leaderboard', gm:'Cierre 🏆',       title:'¡Fin de la Clase!' }
 ];
 
@@ -2473,6 +2487,96 @@ function getStageContent(id) {
         </div>
       </div>`,
 
+    'combo-intro': `
+      <div class="content-card" style="background:linear-gradient(135deg,rgba(192,132,252,0.1),rgba(10,14,26,0));border-color:rgba(192,132,252,0.4);">
+        <div style="font-size:40px;text-align:center;margin-bottom:10px;">🔗</div>
+        <h3 style="color:var(--purple);text-align:center;">Bonus Round — La Cadena Completa</h3>
+        <p>En las últimas dos clases aprendiste a <strong>pronosticar demanda</strong> y a <strong>optimizar inventarios</strong>. Estos dos problemas no son independientes: el pronóstico es el <em>input</em> del modelo de inventario.</p>
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:14px;">
+          <div style="background:var(--surf2);border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:24px;margin-bottom:4px;">📈</div>
+            <div style="font-size:13px;font-weight:700;color:var(--A);">Clase 1</div>
+            <div style="font-size:12px;color:var(--muted);">Regresión Lineal<br>Series de Tiempo<br>MAD · R²</div>
+          </div>
+          <div style="font-size:28px;color:var(--gold);">→</div>
+          <div style="background:var(--surf2);border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:24px;margin-bottom:4px;">📦</div>
+            <div style="font-size:13px;font-weight:700;color:var(--purple);">Clase 2</div>
+            <div style="font-size:12px;color:var(--muted);">EOQ · Q* óptimo<br>Sistema Q<br>IS · Punto Reorden</div>
+          </div>
+        </div>
+      </div>
+      <div class="content-card">
+        <h3>🏭 El caso: Distribuidora FRISCA</h3>
+        <p>FRISCA distribuye insumos para la industria alimentaria. Su demanda depende de los precios de materias primas en el mercado.</p>
+        <p style="margin-top:8px;">El equipo tiene <strong>13 meses de datos históricos</strong> y proyecciones de precios para los próximos 12 meses. Tu misión: construir el modelo y tomar las decisiones de inventario.</p>
+        <div class="highlight-box gold" style="margin-top:10px;">
+          <strong>Plan de ataque:</strong><br>
+          1️⃣ Construir una regresión múltiple con los datos históricos<br>
+          2️⃣ Pronosticar la demanda del año siguiente<br>
+          3️⃣ Calcular EOQ y punto de reorden
+        </div>
+      </div>
+      <div class="content-card" style="margin-top:8px;">
+        <h3>⚙️ Parámetros del negocio</h3>
+        <table class="data-table">
+          <tr><td>Costo por pedido (S)</td><td class="val">$50 / orden</td></tr>
+          <tr><td>Costo unitario (C)</td><td class="val">$8 / unidad</td></tr>
+          <tr><td>Tasa de holding (i)</td><td class="val">25% / año → iC = $2/u/año</td></tr>
+          <tr><td>Lead time (L)</td><td class="val">10 días</td></tr>
+          <tr><td>Días al año / mes</td><td class="val">250 / 25 días hábiles</td></tr>
+          <tr><td>Nivel de servicio</td><td class="val">95% → z = 1.645</td></tr>
+        </table>
+      </div>`,
+
+    'combo-data': `
+      <div class="content-card">
+        <h3>📊 Datos históricos — t = 0 a 12</h3>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Tienes demanda real + dos predictores. Construye la regresión en Excel.</p>
+        <div style="overflow-x:auto;">
+          <table class="data-table" style="min-width:320px;">
+            <tr><th>t</th><th>Demanda (Y)</th><th>P. Carne (X₁)</th><th>P. Leche (X₂)</th></tr>
+            <tr><td>0</td><td class="val">40.2</td><td>49.4</td><td>575.1</td></tr>
+            <tr><td>1</td><td class="val">86.8</td><td>92.0</td><td>626.0</td></tr>
+            <tr><td>2</td><td class="val">57.2</td><td>59.7</td><td>245.2</td></tr>
+            <tr><td>3</td><td class="val">26.4</td><td>39.7</td><td>189.5</td></tr>
+            <tr><td>4</td><td class="val">31.6</td><td>39.9</td><td>145.4</td></tr>
+            <tr><td>5</td><td class="val">84.6</td><td>99.7</td><td>593.1</td></tr>
+            <tr><td>6</td><td class="val">85.3</td><td>90.2</td><td>380.6</td></tr>
+            <tr><td>7</td><td class="val">9.2</td><td>18.2</td><td>540.8</td></tr>
+            <tr><td>8</td><td class="val">32.7</td><td>34.6</td><td>86.9</td></tr>
+            <tr><td>9</td><td class="val">72.1</td><td>79.5</td><td>492.9</td></tr>
+            <tr><td>10</td><td class="val">48.8</td><td>66.0</td><td>552.3</td></tr>
+            <tr><td>11</td><td class="val">4.1</td><td>14.5</td><td>480.2</td></tr>
+            <tr><td>12</td><td class="val">35.7</td><td>46.3</td><td>92.7</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="content-card">
+        <h3>🔮 Precios proyectados — t = 13 a 24 (sin demanda)</h3>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Usa el modelo para pronosticar la demanda de estos períodos.</p>
+        <div style="overflow-x:auto;">
+          <table class="data-table" style="min-width:280px;">
+            <tr><th>t</th><th>P. Carne (X₁)</th><th>P. Leche (X₂)</th><th>Ŷ = ?</th></tr>
+            <tr><td>13</td><td>54.1</td><td>623.5</td><td class="val" style="color:var(--muted);">...</td></tr>
+            <tr><td>14</td><td>89.1</td><td>461.8</td><td class="val" style="color:var(--muted);">...</td></tr>
+            <tr><td>15</td><td>67.3</td><td>516.1</td><td class="val" style="color:var(--muted);">...</td></tr>
+            <tr><td>16</td><td>35.5</td><td>147.3</td><td class="val" style="color:var(--muted);">...</td></tr>
+            <tr><td>17</td><td>32.5</td><td>341.3</td><td class="val" style="color:var(--muted);">...</td></tr>
+            <tr><td>18</td><td>93.3</td><td>647.6</td><td class="val" style="color:var(--muted);">...</td></tr>
+            <tr><td>19</td><td>90.7</td><td>566.1</td><td class="val" style="color:var(--muted);">...</td></tr>
+            <tr><td>20</td><td>10.9</td><td>166.2</td><td class="val" style="color:var(--muted);">...</td></tr>
+            <tr><td>21</td><td>43.6</td><td>457.2</td><td class="val" style="color:var(--muted);">...</td></tr>
+            <tr><td>22</td><td>87.5</td><td>622.9</td><td class="val" style="color:var(--muted);">...</td></tr>
+            <tr><td>23</td><td>48.8</td><td>283.2</td><td class="val" style="color:var(--muted);">...</td></tr>
+            <tr><td>24</td><td>21.2</td><td>472.9</td><td class="val" style="color:var(--muted);">...</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="highlight-box" style="font-size:12px;margin-top:8px;">
+        💡 <strong>Pista modelo:</strong> Demanda = a + b·X₁ + c·X₂ &nbsp;|&nbsp; σ_mensual (residuos) → σ_diaria = σ/√25 &nbsp;|&nbsp; σ_LT = σ_diaria·√L
+      </div>`,
+
     final: `
       <div class="content-card" style="text-align:center;padding:32px;">
         <div style="font-size:64px;margin-bottom:12px;">🏆</div>
@@ -2531,6 +2635,24 @@ function getExerciseProblem(exId) {
       </table>
       <div class="highlight-box" style="margin-top:8px;font-size:12px;">
         <strong>Tip:</strong> σ_anual = √250 × σ_diaria → despeja σ_diaria primero. Luego σ_LT = σ_diaria × √L
+      </div>
+    </div>`,
+    ej5: `<div class="content-card">
+      <h3>🌟 Ejercicio Final — FRISCA: Pronóstico + Inventario</h3>
+      <p>Usando los datos de FRISCA, construye el modelo de regresión múltiple <strong>Y = a + b·X₁ + c·X₂</strong> con los 13 datos históricos, pronostica la demanda futura y define la política de inventario óptima.</p>
+      <table class="data-table" style="margin-top:10px;">
+        <tr><th>Parámetro</th><th>Valor</th></tr>
+        <tr><td>Costo por pedido (S)</td><td class="val">$50</td></tr>
+        <tr><td>Costo unitario (C)</td><td class="val">$8</td></tr>
+        <tr><td>Holding (iC)</td><td class="val">$2 / u / año</td></tr>
+        <tr><td>Lead Time (L)</td><td class="val">10 días</td></tr>
+        <tr><td>Días año / mes</td><td class="val">250 / 25</td></tr>
+        <tr><td>Nivel servicio</td><td class="val">95% (z=1.645)</td></tr>
+        <tr><td>σ mensual</td><td class="val">σ_residuos del modelo</td></tr>
+      </table>
+      <div class="highlight-box" style="margin-top:8px;font-size:12px;">
+        <strong>Flujo:</strong> Regresión (t=0..12) → Pronosticar t=13..24 → D_anual → EOQ → Sistema Q<br>
+        σ_diaria = σ_mensual/√25 &nbsp;|&nbsp; σ_LT = σ_diaria·√L
       </div>
     </div>`,
     ej4: `<div class="content-card">
