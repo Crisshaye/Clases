@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Auxiliar Inventario 🎮</title>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -20,6 +20,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .screen{display:none;flex-direction:column;min-height:100vh;}
 .screen.active{display:flex;}
 button{font-family:inherit;}
+button,input,select,.nav-zone{touch-action:manipulation;}
 
 /* ── LOADING ── */
 #screen-loading{align-items:center;justify-content:center;gap:16px;}
@@ -138,6 +139,14 @@ input:focus{border-color:var(--A);}
 .racer.answered .racer-dot{box-shadow:0 0 0 3px var(--green),0 2px 8px rgba(0,0,0,.5);}
 
 /* ── OVERLAYS ── */
+/* toast no-modal */
+#toast-wrap{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:300;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:calc(100% - 32px);max-width:420px;}
+.toast{background:var(--surf2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.5);animation:toastIn .25s ease;text-align:center;}
+.toast.err{border-color:var(--red);color:var(--red);background:rgba(248,113,113,.12);}
+.toast.ok{border-color:var(--green);color:var(--green);background:rgba(74,222,128,.12);}
+.toast.hide{opacity:0;transition:opacity .4s;}
+@keyframes toastIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+
 .overlay{display:none;position:fixed;inset:0;background:rgba(4,6,12,.88);z-index:100;align-items:center;justify-content:center;padding:20px;}
 .overlay.active{display:flex;}
 .ov-card{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:22px;width:100%;max-height:92vh;overflow-y:auto;position:relative;}
@@ -291,6 +300,27 @@ input:focus{border-color:var(--A);}
   </div>
 </div>
 
+<div id="toast-wrap"></div>
+
+<!-- OVERLAY: CONFIRMAR REINICIO -->
+<div class="overlay" id="ov-reset">
+  <div class="ov-card" style="max-width:460px;">
+    <button class="ov-close" onclick="closeOverlay('ov-reset')">✕</button>
+    <div class="ov-title">↺ Reiniciar la clase</div>
+    <p style="font-size:14px;line-height:1.6;margin-bottom:14px;">
+      Se borrarán <b>todos los alumnos, puntajes y respuestas</b> de la sesión.
+      Esta acción no se puede deshacer.
+    </p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">
+      💾 Si quieres conservar los resultados, exporta los puntajes antes de reiniciar.
+    </p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="gmb" style="flex:1;padding:11px;" onclick="exportScores()">📥 Exportar puntajes (CSV)</button>
+      <button class="gmb stop" style="flex:1;padding:11px;" onclick="doResetGame()">🗑 Sí, reiniciar todo</button>
+    </div>
+  </div>
+</div>
+
 <!-- OVERLAY: GRID DE SLIDES -->
 <div class="overlay" id="ov-grid">
   <div class="ov-card">
@@ -337,7 +367,7 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "509403718746",
   appId: "1:509403718746:web:a823fa1e31b61cd3cb2463"
 };
-const GM_PASSWORD = "GASOFA2024";
+const GM_PASSWORD = "FRISCA2026";
 const TOTAL_SLIDES = 80;
 const slideSrc = n => `slides/slide-${String(n).padStart(2,'0')}.png`;
 
@@ -506,7 +536,7 @@ function initFirebase() {
   firebase.auth().signInAnonymously().then(cred => {
     state.uid = cred.user.uid;
     checkExistingSession();
-  }).catch(e => alert('Error de conexión: ' + e.message));
+  }).catch(e => showToast('Error de conexión: ' + e.message, 'err'));
 }
 
 async function checkExistingSession() {
@@ -640,6 +670,15 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
+function showToast(msg, type) {
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => el.classList.add('hide'), 2600);
+  setTimeout(() => el.remove(), 3100);
+}
 function showOverlay(id) { document.getElementById(id).classList.add('active'); }
 function closeOverlay(id) { document.getElementById(id).classList.remove('active'); }
 function firstName(n) { return (n||'').split(' ')[0]; }
@@ -748,7 +787,7 @@ async function submitExercise(exId) {
     if (v === '') allFilled = false;
     values[f.key] = parseFloat(v);
   });
-  if (!allFilled) { alert('Completa todos los campos antes de enviar'); return; }
+  if (!allFilled) { showToast('Completa todos los campos antes de enviar', 'err'); return; }
   await db.collection('answers').doc(exId+'_'+state.uid).set({
     moduleId:exId, kind:'exercise', uid:state.uid, value:values, bet:selectedBet,
     submittedAt:firebase.firestore.FieldValue.serverTimestamp(), pointsAwarded:null
@@ -1178,8 +1217,24 @@ function showLeaderboard() {
 // ════════════════════════════════════════════════════
 // 🔄 RESET
 // ════════════════════════════════════════════════════
-async function resetGame() {
-  if (!confirm('¿Reiniciar la clase? Se borran alumnos, puntajes y respuestas.')) return;
+function resetGame() { showOverlay('ov-reset'); }
+
+function exportScores() {
+  const students = Object.values(state.allStudents).filter(s=>!s.isGM).sort((a,b)=>(b.score||0)-(a.score||0));
+  if (!students.length) { showToast('No hay alumnos registrados', 'err'); return; }
+  const rows = [['numero','nombre','equipo','puntaje'],
+    ...students.map(s => [s.number, '"'+(s.name||'').replace(/"/g,'""')+'"', TEAMS[s.teamId]?.name||s.teamId, s.score||0])];
+  const csv = '﻿' + rows.map(r=>r.join(';')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = 'puntajes_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Puntajes exportados', 'ok');
+}
+
+async function doResetGame() {
+  closeOverlay('ov-reset');
   const stuSnap = await db.collection('students').get();
   const ansSnap = await db.collection('answers').get();
   const batch = db.batch();
@@ -1190,6 +1245,7 @@ async function resetGame() {
   await db.collection('meta').doc('session').set({ slide: state.session?.slide||1, module:null, revealed:false, resetAt: Date.now() });
   state.allAnswers = {};
   closeOverlay('ov-module');
+  showToast('Clase reiniciada', 'ok');
 }
 
 // ════════════════════════════════════════════════════
