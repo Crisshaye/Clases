@@ -198,6 +198,11 @@ input:focus{border-color:var(--A);}
 .lb-teamcard{border-radius:12px;padding:14px;text-align:center;border:2px solid;}
 .lb-teamcard .t-pts{font-size:28px;font-weight:800;}
 
+/* ── DESCARGAS (alumno) ── */
+.dl-row{display:flex;gap:8px;}
+.dl-btn{flex:1;text-align:center;background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:9px 6px;font-size:12.5px;font-weight:700;color:var(--A);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dl-btn:active{background:var(--surf2);}
+
 /* ── SLIDES INTERACTIVAS (escena GM + espejo alumno) ── */
 #stage-inter{position:absolute;inset:0;overflow:auto;display:none;padding:18px;z-index:4;}
 .stage-widget{max-width:940px;margin:0 auto;background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px 22px;}
@@ -302,10 +307,13 @@ input:focus{border-color:var(--A);}
 <div class="screen" id="screen-register">
   <div class="reg-card">
     <div class="reg-title">📦 Auxiliar Inventario</div>
-    <div class="reg-subtitle">Identifícate para recibir tu número y tu equipo</div>
+    <div class="reg-subtitle">Elige tu nombre de batalla y recibe tu número y equipo</div>
     <div>
-      <label>Tu nombre</label>
-      <input id="reg-name" type="text" placeholder="Nombre y apellido" maxlength="30" autocomplete="off">
+      <label>Tu nombre de batalla</label>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <select id="alias-select" style="flex:1;"></select>
+        <button type="button" class="btn" style="width:auto;padding:10px 14px;background:var(--surf2);border:1px solid var(--border);color:var(--text);" onclick="randomAlias()" title="Dame otro al azar">🔀</button>
+      </div>
     </div>
     <div id="reg-error"></div>
     <button class="btn btn-primary" onclick="doRegister()">Entrar 🚀</button>
@@ -334,6 +342,10 @@ input:focus{border-color:var(--A);}
     <div class="slide-mirror" id="st-mirror">
       <div id="st-mirror-body"><img id="st-slide" src="" alt="Slide actual"></div>
       <div class="mirror-tag" id="st-slide-tag">Slide 1</div>
+    </div>
+    <div class="dl-row">
+      <a class="dl-btn" href="files/Auxiliar_2_Ejercicio.xlsx" download>📥 Excel del ejercicio</a>
+      <a class="dl-btn" href="files/Auxiliar_Inventario.pptx" download>📥 Presentación</a>
     </div>
     <div id="st-module-area">
       <div class="wait-msg" style="padding:14px 0;">Sigue la presentación — aquí aparecerán los ejercicios 👀</div>
@@ -541,8 +553,41 @@ const SIMS = {
 // ════════════════════════════════════════════════════
 // 😊 REACCIONES (cooldown 3 minutos)
 // ════════════════════════════════════════════════════
-const REACTIONS = ['👍','🔥','😂','🤯','👏','💡','❓','😴'];
+const REACTIONS = ['👍','🔥','😂','🤯','👏','💡','❓','🤔'];
 const REACTION_COOLDOWN_MS = 3*60*1000;
+
+// ════════════════════════════════════════════════════
+// 🎭 NOMBRES DE BATALLA — temáticos de inventario y pronósticos
+//    (únicos: cada uno se reserva en Firestore al registrarse)
+// ════════════════════════════════════════════════════
+const ALIASES = [
+  'El Ninja del Inventario','Faraón del QRM','Sultán del Stock','El Oráculo de la Demanda',
+  'Barón del Backorder','La Duquesa del EOQ','Capitán Quiebre de Stock','El Mago del Pronóstico',
+  'Lord Lead Time','La Reina del Reorden','El Vikingo de la Bodega','Doctor Demanda',
+  'El Alquimista del Q Óptimo','Madame Desviación','El Samurái del Safety Stock','Gran Visir del Inventario',
+  'El Profeta de los Pedidos','Conde del Costo de Quiebre','La Jefa del Just-in-Time','El Húsar del Holding',
+  'Emperador del Excel','La Bruja del Backlog','El Gladiador de la Góndola','Rey del Remate',
+  'La Sacerdotisa del Sigma','El Pirata del Punto de Reorden','General Gauss','La Condesa de la Curva Normal',
+  'El Chamán del Stock de Seguridad','Príncipe del Periodo P','La Ninja de la Normal','El Zar del Almacén',
+  'Maestro del Mono-Periodo','La Faraona del Forecast','El Monje del Multi-Periodo','Cazador de Quiebres',
+  'La Guardiana de la Góndola','El Titán del Lead Time','Señor de los Pedidos','La Maga del Margen',
+  'El Centinela del Ciclo','Reina del Ratio Crítico','El Druida de la Demanda','Almirante del Abastecimiento',
+  'La Valkiria del Volumen','El Espartano del Stock','Duque del Descuento','Baronesa del Buffer',
+  'El Caballero del Kardex','Sultana de la Simulación','El Fantasma del FIFO','La Leyenda del LIFO',
+  'El Halcón del Horizonte','Marquesa del Mínimo Costo','El Gurú de la Regresión','Capitana de la Curva de Costos',
+  'El Sabio del Solver','La Domadora de la Demanda','Barón de la Bodega','La Cazadora del Costo Oculto',
+  'El Águila del Aprovisionamiento','Princesa del Pronóstico','El Lobo del Lote Económico','La Estratega del Stock',
+  'Mariscal de la Merma','La Pantera del Pedido','El Cóndor del Consumo','Dama de la Distribución Normal',
+  'El Rayo del Reabastecimiento','La Jequesa del Just-in-Case','El Vigía de la Variabilidad','Señor de los Sigmas',
+  'La Capitana del Capital','El Arquero del Área Bajo la Curva','Reina del Inventario Cero','El Búho de la Bodega',
+  'La Hechicera del Histórico','El Corsario del Ciclo Corto','Duquesa de la Demanda Diaria','El Templario de la Tolerancia',
+  'La Almirante del Análisis ABC','El Bardo del Backorder','Condesa del Costo Anual','El Explorador del Error Estándar',
+  'La Sultana del Suavizamiento','El Minero del Mínimo Cuadrado','Reina de la Regresión','El Jinete del Inventario Justo',
+  'La Vikinga de la Varianza','El Conde del Cuartil','Emperatriz del EOQ','El Sherpa del Stock',
+  'La Pitonisa del Promedio Móvil','El Duque de la Demanda','Guardiana del Q Óptimo','El Mercader de la Media',
+  'La General del Lote Grande','El Vigilante del Nivel de Servicio','Marquesa del Pedido Perfecto','El Astrónomo del Stock Estelar',
+  'La Ingeniera del Reorden Infinito','El Filósofo del Punto Fijo','Cacique del Costo por Ordenar','La Emisaria del Error de Pronóstico'
+];
 
 const TEAMS = {
   A: { name: "Equipo Azul",    emoji: "🔵", css: "var(--A)", hex:"#60a5fa" },
@@ -711,21 +756,51 @@ async function checkExistingSession() {
     updateStudentTopbar();
   } else {
     showScreen('screen-register');
+    loadAliases();
   }
 }
 
 // ════════════════════════════════════════════════════
-// 📝 REGISTRO — número secuencial + equipo por color
+// 📝 REGISTRO — nombre de batalla único + número secuencial + equipo
 // ════════════════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i=a.length-1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+async function loadAliases() {
+  const sel = document.getElementById('alias-select');
+  sel.innerHTML = '<option>Cargando nombres...</option>';
+  let taken = new Set();
+  try {
+    const snap = await db.collection('aliases').get();
+    snap.forEach(d => taken.add(d.id));
+  } catch(e) { /* sin lectura: se valida igual al registrar */ }
+  const free = shuffle(ALIASES.filter(a => !taken.has(a)));
+  if (!free.length) { sel.innerHTML = '<option value="">😱 No quedan nombres libres</option>'; return; }
+  sel.innerHTML = free.map(a => `<option value="${a}">${a}</option>`).join('');
+}
+function randomAlias() {
+  const sel = document.getElementById('alias-select');
+  const opts = [...sel.options].filter(o => o.value);
+  if (!opts.length) return;
+  sel.value = opts[Math.floor(Math.random()*opts.length)].value;
+}
+
 async function doRegister() {
-  const name = document.getElementById('reg-name').value.trim();
-  if (!name) { showRegError('Escribe tu nombre'); return; }
+  const name = document.getElementById('alias-select')?.value?.trim();
+  if (!name) { showRegError('Elige tu nombre de batalla'); return; }
   try {
     const number = await db.runTransaction(async tx => {
+      // reserva atómica del alias + número secuencial
+      const aliasRef = db.collection('aliases').doc(name);
+      const aliasSnap = await tx.get(aliasRef);
+      if (aliasSnap.exists) { const err = new Error('alias'); err.code = 'alias-taken'; throw err; }
       const ref = db.collection('meta').doc('counter');
       const snap = await tx.get(ref);
       const n = (snap.exists ? (snap.data().n||0) : 0) + 1;
       tx.set(ref, { n });
+      tx.set(aliasRef, { uid: state.uid, takenAt: firebase.firestore.FieldValue.serverTimestamp() });
       return n;
     });
     const teamId = number % 2 === 1 ? 'A' : 'B';
@@ -736,7 +811,10 @@ async function doRegister() {
     subscribeAll();
     showScreen('screen-student');
     updateStudentTopbar();
-  } catch(e) { showRegError('Error al registrar: '+e.message); }
+  } catch(e) {
+    if (e.code === 'alias-taken') { showRegError('😅 Ese nombre recién fue tomado — elige otro'); loadAliases(); }
+    else showRegError('Error al registrar: '+e.message);
+  }
 }
 
 async function doGMLogin() {
@@ -873,7 +951,12 @@ function showToast(msg, type) {
 }
 function showOverlay(id) { document.getElementById(id).classList.add('active'); }
 function closeOverlay(id) { document.getElementById(id).classList.remove('active'); }
-function firstName(n) { return (n||'').split(' ')[0]; }
+// nombre corto del alias: omite artículos ("La Duquesa del EOQ" → "Duquesa")
+function firstName(n) {
+  const skip = ['el','la','los','las','del','de','gran'];
+  const w = (n||'').split(' ').filter(x => !skip.includes(x.toLowerCase()));
+  return w[0] || (n||'');
+}
 function teamColor(t) { return TEAMS[t]?.hex || '#888'; }
 
 // ════════════════════════════════════════════════════
@@ -940,7 +1023,7 @@ function buildStudentExercise(mod) {
   const ex = EXERCISES[mod.id];
   const myAnswer = answersOf(state.uid).find(a => a.kind === 'exercise');
   if (myAnswer) return buildExerciseResult(mod.id, ex, myAnswer);
-  if (!mod.isOpen) return `<div class="submitted-card"><div style="font-size:42px;">😴</div><p style="color:var(--muted);margin-top:10px;">El ejercicio ya cerró y no alcanzaste a responder</p></div>`;
+  if (!mod.isOpen) return `<div class="submitted-card"><div style="font-size:42px;">⏰</div><p style="color:var(--muted);margin-top:10px;">El ejercicio ya cerró — ¡a la próxima!</p></div>`;
   return `
     ${getExerciseProblem(mod.id)}
     <div class="content-card" style="margin-top:12px;">
@@ -1050,7 +1133,7 @@ function buildStudentRound(mod) {
       ${header}
       ${lastAnswerFeedback(round, mine, letters)}
       <div style="text-align:center;margin-top:14px;">
-        <div style="font-size:38px;">${answeredCount ? '🏁' : '😴'}</div>
+        <div style="font-size:38px;">${answeredCount ? '🏁' : '⏰'}</div>
         <div class="score-reveal" style="font-size:26px;">+${totalPts.toLocaleString()} pts en el round</div>
         <div class="wait-msg" style="margin-top:10px;">${mod.isOpen ? '¡Listo! Espera a tus compañeros...' : 'Round cerrado'}</div>
       </div>
@@ -1548,17 +1631,19 @@ function exportScores() {
 
 async function doResetGame() {
   closeOverlay('ov-reset');
-  const [stuSnap, ansSnap, reactSnap, voteSnap] = await Promise.all([
+  const [stuSnap, ansSnap, reactSnap, voteSnap, aliasSnap] = await Promise.all([
     db.collection('students').get(),
     db.collection('answers').get(),
     db.collection('reactions').get(),
-    db.collection('coinVotes').get()
+    db.collection('coinVotes').get(),
+    db.collection('aliases').get()
   ]);
   const batch = db.batch();
   stuSnap.forEach(d => { if (!d.data().isGM) batch.delete(d.ref); });
   ansSnap.forEach(d => batch.delete(d.ref));
   reactSnap.forEach(d => batch.delete(d.ref));
   voteSnap.forEach(d => batch.delete(d.ref));
+  aliasSnap.forEach(d => batch.delete(d.ref));
   batch.set(db.collection('meta').doc('counter'), { n: 0 });
   await batch.commit();
   await db.collection('meta').doc('session').set({ slide: state.session?.slide||1, module:null, revealed:false, resetAt: Date.now() });
@@ -2251,6 +2336,8 @@ async function finishGame() {
   if (cirujano) awards.push({icon:'🎯', title:'El Cirujano', detail:`${cirujano.v} campos exactos en los ejercicios`, who:`#${cirujano.s.number} ${firstName(cirujano.s.name)}`});
   const golpe = pick(st=>st.best, 1);
   if (golpe) awards.push({icon:'💥', title:'El Golpe Maestro', detail:`+${golpe.v.toLocaleString()} pts en un solo ejercicio`, who:`#${golpe.s.number} ${firstName(golpe.s.name)}`});
+  const adorable = students[Math.floor(Math.random()*students.length)];
+  awards.push({icon:'🥰', title:'El Más Adorable', detail:'elegido por sorteo universal, transparente e inapelable', who:`#${adorable.number} ${firstName(adorable.name)}`});
   const finale = {
     at: Date.now(),
     winner: totA===totB ? 'empate' : (totA>totB ? 'A' : 'B'),
