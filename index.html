@@ -180,8 +180,7 @@ input:focus{border-color:var(--A);}
 .quiz-bar > div{height:100%;transition:width .5s;}
 .quiz-bar span{position:absolute;left:8px;top:2px;font-size:12px;font-weight:700;}
 
-/* consulta */
-#ov-chart .ov-card{max-width:1000px;}
+/* gráficos */
 .chart-container{position:relative;height:380px;background:var(--surf2);border-radius:10px;padding:10px;margin-top:10px;}
 .slider-row{display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap;}
 .slider-row input[type=range]{flex:1;min-width:180px;accent-color:var(--A);}
@@ -199,10 +198,95 @@ input:focus{border-color:var(--A);}
 .lb-teamcard{border-radius:12px;padding:14px;text-align:center;border:2px solid;}
 .lb-teamcard .t-pts{font-size:28px;font-weight:800;}
 
+/* ── SLIDES INTERACTIVAS (escena GM + espejo alumno) ── */
+#stage-inter{position:absolute;inset:0;overflow:auto;display:none;padding:18px;z-index:4;}
+.stage-widget{max-width:940px;margin:0 auto;background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px 22px;}
+.stage-widget .w-title{font-size:22px;font-weight:800;margin-bottom:6px;}
+#stage-inter .chart-container{height:min(48vh,460px);}
+#stage-action{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);z-index:8;display:none;}
+.stage-btn{padding:14px 28px;font-size:17px;font-weight:800;border:none;border-radius:12px;background:linear-gradient(135deg,var(--green),#22c55e);color:#052e16;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.5);}
+.stage-btn.gold{background:linear-gradient(135deg,var(--gold),#f59e0b);color:#451a03;}
+#st-mirror-body .chart-container{height:250px;}
+#st-mirror-body .stage-widget{border:none;padding:12px;}
+#st-mirror-body .w-title{font-size:15px;}
+
+/* ── QUIZ GRID (proyector: 4 cuadrantes) ── */
+#quiz-grid{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:10px;padding:12px 12px 64px 12px;overflow:auto;z-index:4;background:var(--bg);}
+.qcell{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:12px 14px;overflow:auto;display:flex;flex-direction:column;}
+.qcell h4{font-size:15px;line-height:1.35;margin-bottom:4px;}
+.qcell .qnum{color:var(--purple);font-weight:800;font-size:12px;}
+.qopt-row{margin-top:7px;font-size:13px;}
+.qopt-row.is-correct{color:var(--green);font-weight:800;}
+
+/* ── REACCIONES ── */
+#react-fab{position:fixed;bottom:16px;right:14px;width:54px;height:54px;border-radius:50%;font-size:26px;border:1px solid var(--border);background:var(--surf2);z-index:60;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.45);}
+#react-panel{display:none;position:fixed;bottom:78px;right:14px;background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:10px;grid-template-columns:repeat(4,1fr);gap:8px;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.5);}
+#react-panel.open{display:grid;}
+.r-btn{font-size:24px;background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;cursor:pointer;}
+.float-react{position:absolute;bottom:-50px;z-index:22;display:flex;flex-direction:column;align-items:center;gap:2px;animation:floatUp 4.5s ease-out forwards;pointer-events:none;}
+.float-react .fr-e{font-size:46px;text-shadow:0 2px 10px rgba(0,0,0,.6);}
+.float-react .fr-n{font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.55);padding:1px 9px;border-radius:10px;white-space:nowrap;}
+@keyframes floatUp{0%{transform:translateY(0) scale(.6);opacity:0;}8%{opacity:1;transform:translateY(-4vh) scale(1.15);}100%{transform:translateY(-66vh) scale(1);opacity:0;}}
+
+/* ── EVENTOS: banner, ruleta, smite ── */
+#event-banner{position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:250;background:var(--surf);border:2px solid var(--gold);border-radius:16px;padding:16px 26px;display:none;text-align:center;box-shadow:0 14px 44px rgba(0,0,0,.6);animation:pop .45s ease;max-width:92vw;}
+#event-banner .eb-icon{font-size:44px;}
+#event-banner .eb-text{font-size:16px;font-weight:700;margin-top:4px;}
+.picker-row{display:flex;align-items:center;gap:10px;background:var(--surf2);border-radius:10px;padding:10px 12px;margin-top:6px;cursor:pointer;font-size:14px;}
+.picker-row:hover{background:rgba(96,165,250,.15);}
+#ruleta-canvas{display:block;margin:0 auto;max-width:100%;}
+.ruleta-pointer{text-align:center;font-size:28px;margin-bottom:-8px;}
+
+/* ── MONEDA DOBLE O NADA ── */
+.coin-wrap{display:flex;gap:44px;justify-content:center;margin:26px 0;flex-wrap:wrap;}
+.coin-slot{display:flex;flex-direction:column;align-items:center;gap:10px;}
+.coin{width:132px;height:132px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:900;border:5px solid rgba(255,255,255,.35);box-shadow:0 8px 30px rgba(0,0,0,.5), inset 0 0 24px rgba(255,255,255,.25);backface-visibility:visible;}
+.coin.A{background:radial-gradient(circle at 35% 30%,#93c5fd,#60a5fa 55%,#1d4ed8);}
+.coin.B{background:radial-gradient(circle at 35% 30%,#fdba74,#fb923c 55%,#c2410c);}
+.coin.spin{animation:coinSpin 2.4s cubic-bezier(.25,.8,.35,1) forwards;}
+@keyframes coinSpin{0%{transform:rotateY(0) translateY(0);}30%{transform:rotateY(720deg) translateY(-46px);}60%{transform:rotateY(1440deg) translateY(0);}80%{transform:rotateY(1690deg) translateY(-14px);}100%{transform:rotateY(1800deg) translateY(0);}}
+.coin-res{font-size:26px;font-weight:900;text-align:center;min-height:34px;}
+.coin-res.win{color:var(--green);animation:pop .5s ease;}
+.coin-res.lose{color:var(--red);animation:pop .5s ease;}
+.vote-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.vote-btn{padding:18px;border-radius:14px;border:none;font-size:20px;font-weight:900;cursor:pointer;}
+.vote-btn.yes{background:linear-gradient(135deg,var(--green),#16a34a);color:#052e16;}
+.vote-btn.no{background:var(--surf2);border:2px solid var(--red);color:var(--red);}
+.cd-bar{height:10px;background:var(--surf2);border-radius:6px;overflow:hidden;margin-top:12px;}
+.cd-bar>div{height:100%;background:var(--gold);transition:width 1s linear;}
+
+/* ── CEREMONIA FINAL ── */
+#ov-finale .ov-card{max-width:840px;text-align:center;position:relative;overflow:hidden;}
+.fin-title{font-size:34px;font-weight:900;animation:pop .6s ease backwards;}
+.fin-team{font-size:24px;font-weight:900;border-radius:14px;padding:16px;margin:14px 0;border:2px solid;animation:pop .6s .4s ease backwards;}
+.podium{display:flex;justify-content:center;gap:12px;align-items:flex-end;margin:16px 0 6px;}
+.pod{width:150px;border-radius:12px 12px 0 0;padding:12px 8px 10px;background:var(--surf2);border:1px solid var(--border);animation:rise .8s backwards;}
+.pod .p-medal{font-size:34px;}
+.pod .p-name{font-weight:800;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pod .p-pts{color:var(--gold);font-weight:800;font-size:13px;}
+.pod.p1{padding-bottom:44px;border-color:var(--gold);animation-delay:1.6s;}
+.pod.p2{padding-bottom:24px;animation-delay:1.2s;}
+.pod.p3{padding-bottom:10px;animation-delay:.9s;}
+.award-row{display:flex;gap:12px;align-items:center;background:var(--surf2);border-radius:10px;padding:10px 14px;margin-top:8px;text-align:left;animation:slideIn .5s backwards;}
+.award-row .a-icon{font-size:26px;}
+.award-row .a-title{font-weight:800;font-size:14px;}
+.award-row .a-detail{font-size:12px;color:var(--muted);}
+.award-row .a-who{margin-left:auto;font-weight:800;color:var(--gold);white-space:nowrap;}
+@keyframes pop{0%{transform:scale(.3);opacity:0;}70%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
+@keyframes rise{from{transform:translateY(70px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+@keyframes slideIn{from{transform:translateX(-30px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1;}
+.confetti span{position:absolute;top:-10%;font-size:20px;animation:fall linear infinite;}
+@keyframes fall{to{transform:translateY(115vh) rotate(420deg);}}
+
 @media (max-width:700px){
   #race{height:120px;}
   .racer-dot{width:26px;height:26px;font-size:12px;}
   .gm-bar{flex-wrap:wrap;}
+  #quiz-grid{grid-template-columns:1fr;grid-template-rows:none;}
+  .coin{width:100px;height:100px;font-size:36px;}
+  .podium{gap:8px;}
+  .pod{width:31%;}
 }
 </style>
 </head>
@@ -247,14 +331,16 @@ input:focus{border-color:var(--A);}
     </div>
   </div>
   <div class="st-body">
-    <div class="slide-mirror">
-      <img id="st-slide" src="" alt="Slide actual">
+    <div class="slide-mirror" id="st-mirror">
+      <div id="st-mirror-body"><img id="st-slide" src="" alt="Slide actual"></div>
       <div class="mirror-tag" id="st-slide-tag">Slide 1</div>
     </div>
     <div id="st-module-area">
       <div class="wait-msg" style="padding:14px 0;">Sigue la presentación — aquí aparecerán los ejercicios 👀</div>
     </div>
   </div>
+  <button id="react-fab" onclick="toggleReactPanel()" aria-label="Enviar reacción">😊</button>
+  <div id="react-panel"></div>
 </div>
 
 <!-- SCREEN: GM -->
@@ -274,8 +360,8 @@ input:focus{border-color:var(--A);}
       <div class="menu-pop" id="menu-quiz"></div>
     </div>
     <div class="menu-wrap">
-      <button class="gmb" onclick="toggleMenu('menu-chart')">📊 Consulta ▾</button>
-      <div class="menu-pop" id="menu-chart"></div>
+      <button class="gmb" onclick="toggleMenu('menu-event')">🎉 Eventos ▾</button>
+      <div class="menu-pop" id="menu-event"></div>
     </div>
     <div class="status-pill" id="status-pill" onclick="openModulePanel()"></div>
     <div class="grow"></div>
@@ -283,10 +369,13 @@ input:focus{border-color:var(--A);}
     <button class="gmb" onclick="showLeaderboard()">🏆</button>
     <button class="gmb warn" onclick="resetGame()">↺</button>
   </div>
-  <div class="gm-stage">
+  <div class="gm-stage" id="gm-stage">
     <img id="slide-img" src="" alt="Slide">
-    <div class="nav-zone left" onclick="navSlide(-1)"><span class="nav-arrow">‹</span></div>
-    <div class="nav-zone right" onclick="navSlide(1)"><span class="nav-arrow">›</span></div>
+    <div id="stage-inter"></div>
+    <div id="quiz-grid" style="display:none;"></div>
+    <div class="nav-zone left" id="nav-left" onclick="navSlide(-1)"><span class="nav-arrow">‹</span></div>
+    <div class="nav-zone right" id="nav-right" onclick="navSlide(1)"><span class="nav-arrow">›</span></div>
+    <div id="stage-action"></div>
   </div>
   <div id="race">
     <div class="race-half A">
@@ -301,6 +390,45 @@ input:focus{border-color:var(--A);}
 </div>
 
 <div id="toast-wrap"></div>
+<div id="event-banner"><div class="eb-icon"></div><div class="eb-text"></div></div>
+
+<!-- OVERLAY: RULETA -->
+<div class="overlay" id="ov-ruleta">
+  <div class="ov-card" style="max-width:520px;text-align:center;">
+    <button class="ov-close" onclick="closeOverlay('ov-ruleta')">✕</button>
+    <div class="ov-title">🎰 Ruleta de puntos</div>
+    <div class="ruleta-pointer">🔻</div>
+    <canvas id="ruleta-canvas" width="420" height="420"></canvas>
+    <div id="ruleta-result" style="font-size:17px;font-weight:800;margin:12px 0;min-height:24px;"></div>
+    <button class="stage-btn" id="ruleta-spin-btn" onclick="spinRuleta()">¡Girar! 🎰</button>
+  </div>
+</div>
+
+<!-- OVERLAY: SMITE -->
+<div class="overlay" id="ov-smite">
+  <div class="ov-card" style="max-width:460px;">
+    <button class="ov-close" onclick="closeOverlay('ov-smite')">✕</button>
+    <div class="ov-title">⚡ Smite — elige a tu víctima</div>
+    <p style="font-size:13px;color:var(--muted);">Pierde el 5% de sus puntos (mínimo 50).</p>
+    <div id="smite-picker" style="max-height:55vh;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- OVERLAY: MONEDA DOBLE O NADA -->
+<div class="overlay" id="ov-coin">
+  <div class="ov-card" style="max-width:640px;text-align:center;">
+    <div id="coin-body"></div>
+  </div>
+</div>
+
+<!-- OVERLAY: CEREMONIA FINAL -->
+<div class="overlay" id="ov-finale">
+  <div class="ov-card">
+    <div class="confetti" id="fin-confetti"></div>
+    <button class="ov-close" onclick="closeOverlay('ov-finale')" style="z-index:6;">✕</button>
+    <div id="finale-body" style="position:relative;z-index:2;"></div>
+  </div>
+</div>
 
 <!-- OVERLAY: CONFIRMAR REINICIO -->
 <div class="overlay" id="ov-reset">
@@ -338,14 +466,6 @@ input:focus{border-color:var(--A);}
   </div>
 </div>
 
-<!-- OVERLAY: CONSULTA (charts) -->
-<div class="overlay" id="ov-chart">
-  <div class="ov-card">
-    <button class="ov-close" onclick="closeChartOverlay()">✕</button>
-    <div id="chart-body"></div>
-  </div>
-</div>
-
 <!-- OVERLAY: LEADERBOARD -->
 <div class="overlay" id="ov-board">
   <div class="ov-card">
@@ -368,8 +488,61 @@ const FIREBASE_CONFIG = {
   appId: "1:509403718746:web:a823fa1e31b61cd3cb2463"
 };
 const GM_PASSWORD = "FRISCA2026";
-const TOTAL_SLIDES = 80;
+const IMG_SLIDES = 62;               // slides 63-80 eliminadas (otro tema)
 const slideSrc = n => `slides/slide-${String(n).padStart(2,'0')}.png`;
+
+// ════════════════════════════════════════════════════
+// 🎞️  DECK — slides PNG + slides interactivas intercaladas
+//    t:'img'     → imagen (ex: botón de comenzar ejercicio sobre esa slide)
+//    t:'widget'  → gráfico interactivo (GM y alumnos)
+//    t:'exintro' → portada de ejercicio con botón de inicio
+//    t:'quiz'    → portada de round de preguntas con botón de inicio
+// ════════════════════════════════════════════════════
+const DECK = (() => {
+  const d = [];
+  const img = (a,b) => { for (let n=a; n<=b; n++) d.push({t:'img', n}); };
+  img(1,6);
+  d.push({t:'widget', w:'ztable', label:'📈 Tabla Normal interactiva', icon:'📈'});
+  img(7,13);
+  d.push({t:'widget', w:'simcam', label:'👕 Simulación Camisetas', icon:'👕'});
+  d.push({t:'exintro', ex:'ej1', label:'✏️ Ejercicio 1', icon:'🍦'});
+  d.push({t:'widget', w:'simej1', label:'🍦 Simulación Ejercicio 1', icon:'📊'});
+  d.push({t:'quiz', r:'r1', label:'❓ Round 1 — Mono Periodo', icon:'❓'});
+  img(14,26);
+  d.push({t:'widget', w:'eoq', label:'⛽ Curvas de costo EOQ (GASOFA)', icon:'⛽'});
+  img(27,27);
+  d.push({t:'img', n:28, ex:'ej2'});
+  img(29,30);
+  d.push({t:'quiz', r:'r2', label:'❓ Round 2 — EOQ', icon:'❓'});
+  img(31,35);
+  d.push({t:'widget', w:'ztable', label:'📈 Tabla Normal interactiva', icon:'📈'});
+  img(36,43);
+  d.push({t:'img', n:44, ex:'ej3'});
+  img(45,46);
+  d.push({t:'quiz', r:'r3', label:'❓ Round 3 — Sistema Q', icon:'❓'});
+  img(47,53);
+  d.push({t:'widget', w:'psim', label:'📅 Simulación Sistema P', icon:'📅'});
+  img(54,62);
+  return d;
+})();
+
+// ════════════════════════════════════════════════════
+// 🧪 SIMULACIONES MONO-PERIODO (ganancia esperada vs Q)
+// ════════════════════════════════════════════════════
+const SIMS = {
+  simcam: { title:'👕 Simulación — Camisetas del campeonato',
+    sub:'Demanda ~ N(2.400, 350) · Ganas $10 por venta · Pierdes $5 por sobrante. Mueve Q y compara con el Q* teórico ≈ 2.551.',
+    mu:2400, sigma:350, Cu:10, Co:5, min:1600, max:3200, sample:25, def:2400, unit:'camisetas' },
+  simej1: { title:'🍦 Simulación — Helados del festival (Ejercicio 1)',
+    sub:'Demanda ~ N(800, 120) · Cᵤ = $1.300 · C₀ = $600. Mueve Q: la ganancia esperada de miles de festivales simulados es máxima en el Q* que calculaste.',
+    mu:800, sigma:120, Cu:1300, Co:600, min:500, max:1200, sample:10, def:671, unit:'helados' }
+};
+
+// ════════════════════════════════════════════════════
+// 😊 REACCIONES (cooldown 3 minutos)
+// ════════════════════════════════════════════════════
+const REACTIONS = ['👍','🔥','😂','🤯','👏','💡','❓','😴'];
+const REACTION_COOLDOWN_MS = 3*60*1000;
 
 const TEAMS = {
   A: { name: "Equipo Azul",    emoji: "🔵", css: "var(--A)", hex:"#60a5fa" },
@@ -498,32 +671,21 @@ const QUIZ_ROUNDS = {
 };
 
 // ════════════════════════════════════════════════════
-// 📊 MÓDULOS DE CONSULTA (gráficos interactivos)
-// ════════════════════════════════════════════════════
-const CHART_MODULES = {
-  normal: { title:'📈 Distribución Normal — juega con z' },
-  cuco:   { title:'🧢 Mono Periodo — Ganancia vs Q (Gorros)' },
-  mono:   { title:'👕 Mono Periodo — Simulación Camisetas' },
-  eoq:    { title:'⛽ EOQ — Curvas de Costo (GASOFA)' },
-  psim:   { title:'📅 Sistema P — Simulación del Inventario' }
-};
-
-// ════════════════════════════════════════════════════
 // 🗄️  STATE
 // ════════════════════════════════════════════════════
 const state = {
   uid:null, isGM:false, student:null,
-  session:null, allStudents:{}, allAnswers:{},
-  unsubs:[], activeChart:null, lastModuleKey:null
+  session:null, allStudents:{}, allAnswers:{},   // allAnswers: docId → answer (puede haber varias por alumno en un round)
+  unsubs:[], activeChart:null, lastModuleKey:null,
+  stageKey:null, stMirrorKey:null, myAnswersKey:'',
+  reactionsSince:0, lastEventAt:0, lastFinaleAt:0, lastCoinPhase:null,
+  coinTimer:null, coinCountdown:null, coinVotesUnsub:null
 };
-// id del doc de respuestas para el módulo activo (round incluye la pregunta)
-function currentAnswerModuleId(mod) {
-  if (!mod) return null;
-  return mod.kind === 'round' ? `${mod.id}_q${mod.qIndex||0}` : mod.id;
-}
 function moduleKey(mod) {
-  return mod ? `${mod.kind}:${mod.id}:${mod.qIndex??''}` : null;
+  return mod ? `${mod.kind}:${mod.id}` : null;
 }
+function answersOf(uid) { return Object.values(state.allAnswers).filter(a => a.uid === uid); }
+function answeredUids() { return new Set(Object.values(state.allAnswers).map(a => a.uid)); }
 let selectedBet = 'normal';
 let db;
 
@@ -619,7 +781,7 @@ function subscribeAll() {
     const prev = state.session;
     state.session = snap.data();
     const s = state.session;
-    if (state.isGM) { renderGMSession(prev); return; }
+    if (state.isGM) { renderGMSession(prev); handleCoinEvent(); handleFinale(); return; }
     // Alumno: detectar reset
     if (prev && s.resetAt && prev.resetAt !== s.resetAt) {
       state.unsubs.forEach(u=>u()); state.unsubs=[];
@@ -630,7 +792,16 @@ function subscribeAll() {
     renderStudentSlide();
     const modChanged = JSON.stringify(prev?.module) !== JSON.stringify(s.module);
     const revChanged = prev?.revealed !== s.revealed;
-    if (modChanged || revChanged || !prev) renderStudentModule();
+    if (modChanged || revChanged || !prev) {
+      if (moduleKey(s.module) !== state.lastModuleKey) {
+        state.lastModuleKey = moduleKey(s.module);
+        subscribeAnswers(s.module);
+      }
+      renderStudentModule();
+    }
+    handleActiveEvent();
+    handleCoinEvent();
+    handleFinale();
   });
   const u2 = db.collection('students').onSnapshot(snap => {
     snap.docChanges().forEach(ch => {
@@ -644,20 +815,41 @@ function subscribeAll() {
     }
   });
   state.unsubs.push(u1, u2);
+  // Reacciones: el GM las ve flotar en su pantalla
+  if (state.isGM) {
+    state.reactionsSince = Date.now();
+    const u3 = db.collection('reactions').onSnapshot(snap => {
+      snap.docChanges().forEach(ch => {
+        if (ch.type !== 'added') return;
+        const r = ch.doc.data();
+        if ((r.ts||0) > state.reactionsSince) floatReactionOnGM(r);
+      });
+    });
+    state.unsubs.push(u3);
+  } else {
+    buildReactPanel();
+  }
 }
 
-function subscribeAnswers(moduleId) {
+function subscribeAnswers(mod) {
   state.unsubs.filter(u=>u._isAnswerSub).forEach(u=>u());
   state.unsubs = state.unsubs.filter(u=>!u._isAnswerSub);
   state.allAnswers = {};
-  if (!moduleId) { if (state.isGM) renderRace(); return; }
-  const u = db.collection('answers').where('moduleId','==',moduleId).onSnapshot(snap => {
-    const prevMy = state.allAnswers?.[state.uid];
+  state.myAnswersKey = '';
+  if (!mod) { if (state.isGM) { renderRace(); } return; }
+  const q = mod.kind === 'round'
+    ? db.collection('answers').where('roundId','==',mod.id)
+    : db.collection('answers').where('moduleId','==',mod.id);
+  const u = q.onSnapshot(snap => {
     state.allAnswers = {};
-    snap.forEach(d => state.allAnswers[d.data().uid] = {id:d.id,...d.data()});
-    if (state.isGM) { renderModulePanel(); renderRace(); return; }
-    const nextMy = state.allAnswers[state.uid];
-    if (JSON.stringify(prevMy) !== JSON.stringify(nextMy)) renderStudentModule();
+    snap.forEach(d => state.allAnswers[d.id] = {id:d.id,...d.data()});
+    if (state.isGM) {
+      renderModulePanel(); renderRace(); updateStatusPill();
+      if (state.session?.module?.kind === 'round') updateQuizGrid();
+      return;
+    }
+    const myKey = JSON.stringify(answersOf(state.uid).map(a=>a.id).sort());
+    if (myKey !== state.myAnswersKey) { state.myAnswersKey = myKey; renderStudentModule(); }
   });
   u._isAnswerSub = true;
   state.unsubs.push(u);
@@ -702,47 +894,53 @@ function updateStudentTopbar() {
 }
 
 function renderStudentSlide() {
-  const n = state.session?.slide || 1;
-  const img = document.getElementById('st-slide');
-  const src = slideSrc(n);
-  if (!img.src.endsWith(src)) img.src = src;
-  document.getElementById('st-slide-tag').textContent = 'Slide ' + n;
+  const idx = deckIndex();
+  const entry = DECK[idx-1];
+  const body = document.getElementById('st-mirror-body');
+  document.getElementById('st-slide-tag').textContent = `${idx} / ${DECK.length}`;
+  const key = 'st:'+idx;
+  if (key === state.stMirrorKey) return;
+  state.stMirrorKey = key;
+  destroyActiveChart();
+  if (entry.t === 'img') {
+    body.innerHTML = `<img id="st-slide" src="${slideSrc(entry.n)}" alt="Slide actual">`;
+  } else if (entry.t === 'widget') {
+    body.innerHTML = widgetHTML(entry.w);
+    setTimeout(()=>initWidget(entry.w), 60);
+  } else if (entry.t === 'exintro') {
+    body.innerHTML = `<div style="padding:12px;">${getExerciseProblem(entry.ex)}</div>`;
+  } else if (entry.t === 'quiz') {
+    const r = QUIZ_ROUNDS[entry.r];
+    body.innerHTML = `<div style="padding:28px 16px;text-align:center;">
+      <div style="font-size:44px;">❓</div>
+      <div style="font-size:20px;font-weight:800;margin-top:6px;">${r.title}</div>
+      <p style="color:var(--muted);font-size:13px;margin-top:8px;">${r.questions.length} preguntas · +${QUIZ_BASE_PTS} pts c/u · ⚡ hasta +${QUIZ_SPEED_PTS} por rapidez</p>
+    </div>`;
+  }
 }
 
-let stModKey = '__init__';
+function deckIndex() {
+  return Math.max(1, Math.min(DECK.length, state.session?.slide || 1));
+}
+
 function renderStudentModule() {
   const area = document.getElementById('st-module-area');
   const sess = state.session;
   const mod = sess?.module;
-  const key = moduleKey(mod);
-  // suscribirse SOLO cuando cambia el módulo/pregunta (no en cada render,
-  // si no el formulario se borra con cada respuesta de otro alumno)
-  if (key !== stModKey) {
-    stModKey = key;
-    subscribeAnswers(currentAnswerModuleId(mod));
-  }
-  if (!mod || (!mod.isOpen && !sess.revealed)) {
+  if (!mod) {
     area.innerHTML = `<div class="wait-msg" style="padding:14px 0;">Sigue la presentación — aquí aparecerán los ejercicios 👀</div>`;
     return;
   }
-  const myAnswer = state.allAnswers[state.uid];
-  if (mod.kind === 'exercise') area.innerHTML = buildStudentExercise(mod, myAnswer);
-  else if (mod.kind === 'round') area.innerHTML = buildStudentRoundQ(mod, myAnswer);
+  if (mod.kind === 'exercise') area.innerHTML = buildStudentExercise(mod);
+  else if (mod.kind === 'round') area.innerHTML = buildStudentRound(mod);
 }
 
-// ── Ejercicio (alumno) ──
-function buildStudentExercise(mod, myAnswer) {
+// ── Ejercicio (alumno) — feedback inmediato al enviar ──
+function buildStudentExercise(mod) {
   const ex = EXERCISES[mod.id];
-  const revealed = state.session.revealed;
-  if (revealed && myAnswer) return buildRevealedExercise(ex, myAnswer);
-  if (revealed && !myAnswer) return `<div class="submitted-card"><div style="font-size:42px;">😴</div><p style="color:var(--muted);margin-top:10px;">No alcanzaste a responder este ejercicio</p></div>`;
-  if (myAnswer) return `
-    <div class="submitted-card">
-      <div class="big-check">✅</div>
-      <p style="font-size:16px;font-weight:700;">¡Respuesta enviada!</p>
-      <p style="color:var(--muted);font-size:13px;margin:8px 0;">Apuesta: <span class="bet-tag ${myAnswer.bet}">${myAnswer.bet==='extreme'?'🚀 EXTREMO':'🎯 NORMAL'}</span></p>
-      <div class="wait-msg" style="margin-top:12px;">Esperando que el profesor revele los resultados...</div>
-    </div>`;
+  const myAnswer = answersOf(state.uid).find(a => a.kind === 'exercise');
+  if (myAnswer) return buildExerciseResult(mod.id, ex, myAnswer);
+  if (!mod.isOpen) return `<div class="submitted-card"><div style="font-size:42px;">😴</div><p style="color:var(--muted);margin-top:10px;">El ejercicio ya cerró y no alcanzaste a responder</p></div>`;
   return `
     ${getExerciseProblem(mod.id)}
     <div class="content-card" style="margin-top:12px;">
@@ -779,6 +977,8 @@ function selectBet(type) {
 
 async function submitExercise(exId) {
   const ex = EXERCISES[exId];
+  const mod = state.session?.module;
+  if (!mod || mod.id !== exId || !mod.isOpen) { showToast('El ejercicio ya no está abierto', 'err'); return; }
   const values = {};
   let allFilled = true;
   ex.fields.forEach(f => {
@@ -788,14 +988,18 @@ async function submitExercise(exId) {
     values[f.key] = parseFloat(v);
   });
   if (!allFilled) { showToast('Completa todos los campos antes de enviar', 'err'); return; }
+  // puntuación inmediata: el alumno recibe su resultado y la pauta al instante
+  const { finalPts } = calculateScore(ex, { value: values, bet: selectedBet });
   await db.collection('answers').doc(exId+'_'+state.uid).set({
     moduleId:exId, kind:'exercise', uid:state.uid, value:values, bet:selectedBet,
-    submittedAt:firebase.firestore.FieldValue.serverTimestamp(), pointsAwarded:null
+    submittedAt:firebase.firestore.FieldValue.serverTimestamp(), pointsAwarded:finalPts
+  });
+  await db.collection('students').doc(state.uid).update({
+    score: firebase.firestore.FieldValue.increment(finalPts)
   });
 }
 
-function buildRevealedExercise(ex, myAnswer) {
-  const ptsPer = ex.basePoints / ex.fields.length;
+function buildExerciseResult(exId, ex, myAnswer) {
   const rows = ex.fields.map(f => {
     const sv = parseFloat(myAnswer.value?.[f.key]);
     const diff = Math.abs(sv - f.correct);
@@ -815,43 +1019,52 @@ function buildRevealedExercise(ex, myAnswer) {
       <div class="score-reveal ${positive?'':'negative'}">${positive?'+':''}${finalPts.toLocaleString()} pts</div>
       <div style="margin-bottom:14px;"><span class="bet-tag ${myAnswer.bet||'normal'}">${myAnswer.bet==='extreme'?'🚀 EXTREMO':'🎯 NORMAL'}</span></div>
       <div style="text-align:left;">${rows}</div>
-    </div>`;
+    </div>
+    <div style="margin-top:12px;">${getExerciseSolution(exId)}</div>`;
 }
 
-// ── Round de preguntas (alumno) — feedback inmediato + bonus rapidez ──
-function buildStudentRoundQ(mod, myAnswer) {
+// ── Round de preguntas (alumno) — a su propio ritmo, feedback inmediato ──
+// Las respuestas correctas SOLO se muestran en la pantalla del alumno,
+// nunca en el proyector (hasta que el profesor revela).
+const qShownAt = {};
+function buildStudentRound(mod) {
   const round = QUIZ_ROUNDS[mod.id];
-  const qIdx = mod.qIndex || 0;
-  const qz = round.questions[qIdx];
   const letters = ['A','B','C','D'];
-  const header = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+  const mine = {};
+  answersOf(state.uid).forEach(a => { if (a.kind==='round') mine[a.qIndex] = a; });
+  const answeredCount = Object.keys(mine).length;
+  const totalPts = Object.values(mine).reduce((acc,a)=>acc+(a.pointsAwarded||0), 0);
+  const chips = round.questions.map((_,i) => {
+    const a = mine[i];
+    if (!a) return `<span class="quiz-letter" style="background:var(--surf2);color:var(--muted);">${i+1}</span>`;
+    return `<span class="quiz-letter" style="background:${a.correct?'rgba(74,222,128,.3)':'rgba(248,113,113,.3)'};color:${a.correct?'var(--green)':'var(--red)'};">${a.correct?'✓':'✗'}</span>`;
+  }).join(' ');
+  const header = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap;">
     <span style="font-weight:800;color:var(--purple);">❓ ${round.title}</span>
-    <span style="font-size:12px;color:var(--muted);">Pregunta ${qIdx+1}/${round.questions.length}</span>
+    <span style="display:flex;gap:5px;">${chips}</span>
   </div>`;
-  if (myAnswer) {
-    // feedback inmediato: correcta destacada + puntos ganados
-    const ok = myAnswer.option === qz.correct;
-    const pts = myAnswer.pointsAwarded ?? 0;
-    const bonus = myAnswer.speedBonus ?? 0;
+  // round terminado para este alumno o cerrado
+  if (answeredCount >= round.questions.length || !mod.isOpen) {
+    const last = mine[answeredCount-1];
     return `<div class="content-card">
       ${header}
-      <h3 style="color:var(--text);">${qz.q}</h3>
-      ${qz.options.map((o,i)=>{
-        let cls = '';
-        if (i === qz.correct) cls = 'correct';
-        else if (i === myAnswer.option) cls = 'wrong';
-        return `<div class="quiz-opt ${cls}"><span class="quiz-letter">${letters[i]}</span>${o}${i===qz.correct?' ✓':''}</div>`;
-      }).join('')}
-      <div style="text-align:center;margin-top:16px;">
-        <div style="font-size:38px;">${ok?'🎉':'😬'}</div>
-        <div class="score-reveal ${ok?'':'negative'}" style="font-size:26px;">${ok?'+'+pts.toLocaleString()+' pts':'0 pts'}</div>
-        ${ok && bonus>0 ? `<div style="font-size:12px;color:var(--gold);font-weight:700;">⚡ incluye ${bonus} pts de bonus por rapidez</div>` : ''}
-        <div class="wait-msg" style="margin-top:12px;">Espera la siguiente pregunta...</div>
+      ${lastAnswerFeedback(round, mine, letters)}
+      <div style="text-align:center;margin-top:14px;">
+        <div style="font-size:38px;">${answeredCount ? '🏁' : '😴'}</div>
+        <div class="score-reveal" style="font-size:26px;">+${totalPts.toLocaleString()} pts en el round</div>
+        <div class="wait-msg" style="margin-top:10px;">${mod.isOpen ? '¡Listo! Espera a tus compañeros...' : 'Round cerrado'}</div>
       </div>
     </div>`;
   }
+  // siguiente pregunta sin responder
+  const qIdx = round.questions.findIndex((_,i)=>!mine[i]);
+  const qz = round.questions[qIdx];
+  const shownKey = `${mod.id}_q${qIdx}`;
+  if (!qShownAt[shownKey]) qShownAt[shownKey] = Date.now();
   return `<div class="content-card">
     ${header}
+    ${lastAnswerFeedback(round, mine, letters, qIdx)}
+    <div style="font-size:12px;color:var(--muted);margin-bottom:2px;">Pregunta ${qIdx+1} de ${round.questions.length}</div>
     <h3 style="color:var(--text);font-size:17px;">${qz.q}</h3>
     <p style="color:var(--gold);font-size:12px;font-weight:700;">+${QUIZ_BASE_PTS} pts si aciertas · ⚡ hasta +${QUIZ_SPEED_PTS} extra por rapidez</p>
     ${qz.options.map((o,i)=>`
@@ -861,13 +1074,28 @@ function buildStudentRoundQ(mod, myAnswer) {
   </div>`;
 }
 
+// feedback de la última pregunta respondida (correcta marcada, solo pantalla del alumno)
+function lastAnswerFeedback(round, mine, letters, nextIdx) {
+  const answeredIdxs = Object.keys(mine).map(Number).sort((a,b)=>a-b);
+  if (!answeredIdxs.length) return '';
+  const li = answeredIdxs[answeredIdxs.length-1];
+  const a = mine[li];
+  const qz = round.questions[li];
+  return `<div style="background:var(--surf2);border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:12.5px;">
+    <span style="color:var(--muted);">P${li+1}:</span>
+    ${a.correct
+      ? `<span style="color:var(--green);font-weight:800;"> ✓ Correcta (+${(a.pointsAwarded||0)} pts${a.speedBonus?` · ⚡${a.speedBonus} rapidez`:''})</span>`
+      : `<span style="color:var(--red);font-weight:800;"> ✗ Incorrecta.</span> <span style="color:var(--green);">Era ${letters[qz.correct]}: ${qz.options[qz.correct]}</span>`}
+  </div>`;
+}
+
 async function submitRoundAnswer(roundId, qIdx, optionIdx) {
   document.querySelectorAll('.quiz-opt').forEach(b=>b.disabled=true);
   const mod = state.session?.module;
-  if (!mod || mod.id !== roundId || (mod.qIndex||0) !== qIdx || !mod.isOpen) return;
+  if (!mod || mod.id !== roundId || !mod.isOpen) return;
   const qz = QUIZ_ROUNDS[roundId].questions[qIdx];
-  const openedMs = mod.openedAt?.toMillis?.() || Date.now();
-  const elapsedMs = Math.max(0, Date.now() - openedMs);
+  const shownMs = qShownAt[`${roundId}_q${qIdx}`] || Date.now();
+  const elapsedMs = Math.max(0, Date.now() - shownMs);
   const correct = optionIdx === qz.correct;
   const speedBonus = correct ? Math.round(QUIZ_SPEED_PTS * Math.max(0, 1 - elapsedMs/QUIZ_SPEED_WINDOW_MS)) : 0;
   const pointsAwarded = correct ? QUIZ_BASE_PTS + speedBonus : 0;
@@ -892,26 +1120,149 @@ async function submitRoundAnswer(roundId, qIdx, optionIdx) {
 // ════════════════════════════════════════════════════
 function renderGMSession(prev) {
   const s = state.session;
-  const n = s.slide || 1;
-  document.getElementById('slide-img').src = slideSrc(n);
-  document.getElementById('slide-count').textContent = `${n} / ${TOTAL_SLIDES}`;
-  // precargar vecinos
-  [n-1,n+1,n+2].forEach(k => { if (k>=1 && k<=TOTAL_SLIDES) { const im = new Image(); im.src = slideSrc(k); } });
-  // pill de módulo activo
+  renderGMStage();
   updateStatusPill();
-  // suscripción a respuestas del módulo activo (incluye pregunta del round)
+  // suscripción a respuestas del módulo activo
   const modKey = moduleKey(s.module);
   if (modKey !== state.lastModuleKey) {
     state.lastModuleKey = modKey;
-    subscribeAnswers(currentAnswerModuleId(s.module));
+    subscribeAnswers(s.module);
   }
   // si el panel está abierto, refrescar
   if (document.getElementById('ov-module').classList.contains('active')) renderModulePanel();
 }
 
+// ── Escena principal del GM: slide, widget interactivo o grid de quiz ──
+function renderGMStage() {
+  const s = state.session;
+  const idx = deckIndex();
+  const entry = DECK[idx-1];
+  const mod = s.module;
+  const img = document.getElementById('slide-img');
+  const inter = document.getElementById('stage-inter');
+  const grid = document.getElementById('quiz-grid');
+  const action = document.getElementById('stage-action');
+  document.getElementById('slide-count').textContent = `${idx} / ${DECK.length}`;
+
+  const quizActive = mod && mod.kind === 'round' && QUIZ_ROUNDS[mod.id];
+  const key = quizActive ? `quiz:${mod.id}:${s.revealed?1:0}` : `deck:${idx}`;
+  const changed = key !== state.stageKey;
+  state.stageKey = key;
+
+  if (quizActive) {
+    // el proyector muestra las 4 preguntas con las respuestas en vivo (sin correctas hasta revelar)
+    if (changed) { destroyActiveChart(); buildQuizGrid(mod.id); }
+    updateQuizGrid();
+    img.style.display = 'none'; inter.style.display = 'none'; grid.style.display = 'grid';
+    setNavZones(false);
+    action.style.display = 'block';
+    action.innerHTML = !s.revealed
+      ? `<button class="stage-btn gold" onclick="revealRound()">👀 Siguiente: revelar respuestas correctas</button>`
+      : `<button class="stage-btn" onclick="clearModule()">🏁 Terminar round</button>`;
+    return;
+  }
+
+  grid.style.display = 'none';
+  if (changed) destroyActiveChart();
+  if (entry.t === 'img') {
+    if (changed) img.src = slideSrc(entry.n);
+    img.style.display = ''; inter.style.display = 'none';
+    setNavZones(true);
+    // precargar vecinos (solo imágenes)
+    [idx-1, idx+1, idx+2].forEach(k => {
+      const e = DECK[k-1];
+      if (e && e.t === 'img') { const im = new Image(); im.src = slideSrc(e.n); }
+    });
+  } else {
+    img.style.display = 'none'; inter.style.display = 'block';
+    setNavZones(false);
+    if (changed) {
+      if (entry.t === 'widget') {
+        inter.innerHTML = `<div class="stage-widget">${widgetHTML(entry.w)}</div>`;
+        setTimeout(()=>initWidget(entry.w), 60);
+      } else if (entry.t === 'exintro') {
+        inter.innerHTML = `<div class="stage-widget">
+          <div class="w-title">✏️ ${EXERCISES[entry.ex].title} <span style="color:var(--gold);font-size:15px;">· ${EXERCISES[entry.ex].basePoints.toLocaleString()} pts</span></div>
+          ${getExerciseProblem(entry.ex)}
+        </div>`;
+      } else if (entry.t === 'quiz') {
+        const r = QUIZ_ROUNDS[entry.r];
+        inter.innerHTML = `<div class="stage-widget" style="text-align:center;padding:40px 24px;">
+          <div style="font-size:64px;">❓</div>
+          <div class="w-title" style="font-size:30px;">${r.title}</div>
+          <p style="color:var(--muted);font-size:16px;margin-top:8px;">${r.questions.length} preguntas · +${QUIZ_BASE_PTS} pts c/u · ⚡ hasta +${QUIZ_SPEED_PTS} por rapidez<br>Cada alumno avanza a su ritmo desde su teléfono.</p>
+        </div>`;
+      }
+    }
+  }
+  // botón de acción: comenzar ejercicio / round de esta slide
+  const exId = entry.ex;
+  const rId = entry.t === 'quiz' ? entry.r : null;
+  if (exId && (!mod || mod.id !== exId)) {
+    action.style.display = 'block';
+    action.innerHTML = `<button class="stage-btn" onclick="openModule('exercise','${exId}')">▶ Comenzar ${EXERCISES[exId].title}</button>`;
+  } else if (rId && (!mod || mod.id !== rId)) {
+    action.style.display = 'block';
+    action.innerHTML = `<button class="stage-btn" onclick="openModule('round','${rId}')">▶ Comenzar ${QUIZ_ROUNDS[rId].title}</button>`;
+  } else if (exId && mod && mod.id === exId && mod.isOpen) {
+    action.style.display = 'block';
+    action.innerHTML = `<button class="stage-btn gold" onclick="closeModule()">🔒 Cerrar respuestas</button>`;
+  } else {
+    action.style.display = 'none'; action.innerHTML = '';
+  }
+}
+
+function setNavZones(on) {
+  document.getElementById('nav-left').style.display = on ? '' : 'none';
+  document.getElementById('nav-right').style.display = on ? '' : 'none';
+}
+
+// ── Grid de quiz para el proyector: 4 cuadrantes, sin respuestas correctas ──
+function buildQuizGrid(roundId) {
+  const round = QUIZ_ROUNDS[roundId];
+  const grid = document.getElementById('quiz-grid');
+  grid.innerHTML = round.questions.map((qz,i)=>`
+    <div class="qcell">
+      <div class="qnum">PREGUNTA ${i+1} · <span id="qcell-cnt-${i}">0</span> respuestas</div>
+      <h4>${qz.q}</h4>
+      <div id="qcell-opts-${i}"></div>
+    </div>`).join('');
+}
+
+function updateQuizGrid() {
+  const mod = state.session?.module;
+  if (!mod || mod.kind !== 'round') return;
+  const round = QUIZ_ROUNDS[mod.id];
+  const revealed = state.session.revealed;
+  const letters = ['A','B','C','D'];
+  const answers = Object.values(state.allAnswers);
+  round.questions.forEach((qz,i)=>{
+    const el = document.getElementById('qcell-opts-'+i);
+    if (!el) return;
+    const qAnswers = answers.filter(a=>a.qIndex===i);
+    const counts = qz.options.map((_,o)=>qAnswers.filter(a=>a.option===o).length);
+    const total = Math.max(1, qAnswers.length);
+    const cnt = document.getElementById('qcell-cnt-'+i);
+    if (cnt) cnt.textContent = qAnswers.length;
+    el.innerHTML = qz.options.map((o,oi)=>{
+      const isC = revealed && oi === qz.correct;
+      return `<div class="qopt-row ${isC?'is-correct':''}">
+        ${letters[oi]}. ${o} ${isC?'✓':''}
+        <div class="quiz-bar"><div style="width:${Math.round(counts[oi]/total*100)}%;background:${isC?'rgba(74,222,128,.5)':'rgba(96,165,250,.35)'};"></div>
+        <span>${counts[oi]}</span></div>
+      </div>`;
+    }).join('');
+  });
+}
+
+// revelar correctas en el proyector (cierra el round para nuevas respuestas)
+async function revealRound() {
+  await db.collection('meta').doc('session').update({ 'module.isOpen': false, revealed: true });
+}
+
 async function navSlide(delta) {
   const cur = state.session?.slide || 1;
-  const next = Math.max(1, Math.min(TOTAL_SLIDES, cur + delta));
+  const next = Math.max(1, Math.min(DECK.length, cur + delta));
   if (next === cur) return;
   await db.collection('meta').doc('session').update({ slide: next });
 }
@@ -922,12 +1273,18 @@ async function gotoSlide(n) {
 
 function buildGrid() {
   const g = document.getElementById('grid-slides');
-  let html = '';
-  for (let i=1; i<=TOTAL_SLIDES; i++) {
-    html += `<div class="grid-thumb" id="thumb-${i}" onclick="gotoSlide(${i})">
-      <img loading="lazy" src="${slideSrc(i)}"><span class="gnum">${i}</span></div>`;
-  }
-  g.innerHTML = html;
+  g.innerHTML = DECK.map((e,i)=>{
+    const idx = i+1;
+    if (e.t === 'img') {
+      const badge = e.ex ? `<span class="gnum" style="left:5px;right:auto;background:rgba(74,222,128,.85);color:#052e16;">▶</span>` : '';
+      return `<div class="grid-thumb" id="thumb-${idx}" onclick="gotoSlide(${idx})">
+        <img loading="lazy" src="${slideSrc(e.n)}">${badge}<span class="gnum">${idx}</span></div>`;
+    }
+    return `<div class="grid-thumb" id="thumb-${idx}" onclick="gotoSlide(${idx})" style="display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:4/3;background:var(--surf2);gap:4px;padding:6px;">
+      <span style="font-size:26px;">${e.icon||'⚡'}</span>
+      <span style="font-size:9px;color:var(--muted);text-align:center;line-height:1.3;">${e.label||''}</span>
+      <span class="gnum">${idx}</span></div>`;
+  }).join('');
 }
 function openGrid() {
   document.querySelectorAll('.grid-thumb').forEach(t=>t.classList.remove('current'));
@@ -948,8 +1305,11 @@ function buildMenus() {
     <button class="menu-item" onclick="openModule('exercise','${id}')">${ex.title}<span class="sub">${ex.basePoints} pts</span></button>`).join('');
   document.getElementById('menu-quiz').innerHTML = Object.entries(QUIZ_ROUNDS).map(([id,r])=>`
     <button class="menu-item" onclick="openModule('round','${id}')">❓ ${r.title}<span class="sub">antes del ${r.before}</span></button>`).join('');
-  document.getElementById('menu-chart').innerHTML = Object.entries(CHART_MODULES).map(([id,m])=>`
-    <button class="menu-item" onclick="openChartOverlay('${id}')">${m.title}</button>`).join('');
+  document.getElementById('menu-event').innerHTML = `
+    <button class="menu-item" onclick="showRuletaWheel()">🎰 Ruleta de puntos<span class="sub">premio al azar</span></button>
+    <button class="menu-item" onclick="showSmitePicker()">⚡ Smite<span class="sub">castigo divino</span></button>
+    <button class="menu-item" onclick="startCoinEvent()">🪙 Doble o Nada<span class="sub">votación por equipo · 20s</span></button>
+    <button class="menu-item" onclick="finishGame()" style="border-top:1px solid var(--border);margin-top:4px;">🎬 Finalizar juego<span class="sub">premios y ganador</span></button>`;
 }
 function toggleMenu(id) {
   const el = document.getElementById(id);
@@ -967,22 +1327,8 @@ document.addEventListener('click', e => {
 async function openModule(kind, id) {
   document.querySelectorAll('.menu-pop').forEach(m=>m.classList.remove('open'));
   const module = { kind, id, isOpen:true, openedAt:firebase.firestore.FieldValue.serverTimestamp() };
-  if (kind === 'round') module.qIndex = 0;
   await db.collection('meta').doc('session').update({ module, revealed:false });
-  showOverlay('ov-module');
-  setTimeout(renderModulePanel, 300);
-}
-
-async function nextRoundQuestion() {
-  const mod = state.session?.module;
-  if (!mod || mod.kind !== 'round') return;
-  const round = QUIZ_ROUNDS[mod.id];
-  const next = (mod.qIndex||0) + 1;
-  if (next >= round.questions.length) return;
-  await db.collection('meta').doc('session').update({
-    'module.qIndex': next, 'module.isOpen': true,
-    'module.openedAt': firebase.firestore.FieldValue.serverTimestamp()
-  });
+  showToast(kind==='exercise' ? '✏️ Ejercicio abierto — los alumnos ya pueden responder' : '❓ Round abierto — preguntas en los teléfonos', 'ok');
 }
 
 function openModulePanel() { showOverlay('ov-module'); renderModulePanel(); }
@@ -990,15 +1336,12 @@ function openModulePanel() { showOverlay('ov-module'); renderModulePanel(); }
 function updateStatusPill() {
   const pill = document.getElementById('status-pill');
   const mod = state.session?.module;
-  if (!mod || (!mod.isOpen && !state.session.revealed)) { pill.classList.remove('visible'); return; }
+  if (!mod) { pill.classList.remove('visible'); return; }
   const total = Object.values(state.allStudents).filter(s=>!s.isGM).length;
-  const answered = Object.keys(state.allAnswers).length;
+  const answered = answeredUids().size;
   let title;
   if (mod.kind==='exercise') title = EXERCISES[mod.id]?.title;
-  else {
-    const r = QUIZ_ROUNDS[mod.id];
-    title = `${r?.title} · P${(mod.qIndex||0)+1}/${r?.questions.length}`;
-  }
+  else title = QUIZ_ROUNDS[mod.id]?.title;
   pill.textContent = `${mod.isOpen?'🟢':'🏁'} ${title} · ${answered}/${total} ✓`;
   pill.classList.add('visible');
 }
@@ -1010,11 +1353,11 @@ function renderModulePanel() {
   if (!mod) { body.innerHTML = '<p style="color:var(--muted);">No hay módulo activo.</p>'; return; }
   const students = Object.values(state.allStudents).filter(s=>!s.isGM);
   const answers = Object.values(state.allAnswers);
-  const answered = answers.length;
+  const answered = answeredUids().size;
   updateStatusPill();
 
   const whoDots = students
-    .filter(s => state.allAnswers[s.id])
+    .filter(s => answeredUids().has(s.id))
     .sort((a,b)=>a.number-b.number)
     .map(s=>`<span class="who-dot" style="background:${teamColor(s.teamId)}" title="${s.name}">${s.number}</span>`).join('');
 
@@ -1026,18 +1369,18 @@ function renderModulePanel() {
     </div>`;
 
   if (mod.kind === 'exercise') {
+    const ex = EXERCISES[mod.id];
     const actionsHTML = `
     <div class="mod-actions">
       ${mod.isOpen
         ? `<button class="gmb stop" onclick="closeModule()">🔒 Cerrar respuestas</button>`
-        : (!sess.revealed ? `<button class="gmb go" onclick="reopenModule()">🔓 Reabrir</button>` : '')}
-      ${!sess.revealed ? `<button class="gmb reveal" onclick="revealModule()">🏁 Revelar y puntuar</button>` : ''}
-      ${sess.revealed ? `<button class="gmb" onclick="clearModule()">✔️ Terminar módulo</button>` : ''}
+        : `<button class="gmb go" onclick="reopenModule()">🔓 Reabrir</button>`}
+      <button class="gmb" onclick="clearModule()">✔️ Terminar módulo</button>
       <button class="gmb" onclick="closeOverlay('ov-module')">👁 Ocultar panel (sigue abierto)</button>
     </div>`;
-    const ex = EXERCISES[mod.id];
-    let revealHTML = '';
-    if (sess.revealed) {
+    // mientras el ejercicio está abierto NO se proyectan la pauta ni los resultados
+    let resultsHTML = '';
+    if (!mod.isOpen) {
       const rows = answers
         .map(a => ({a, s: state.allStudents[a.uid]}))
         .filter(x => x.s)
@@ -1053,42 +1396,30 @@ function renderModulePanel() {
           }).join(' ')}</td>
           <td style="font-weight:800;color:${(a.pointsAwarded??0)>=0?'var(--green)':'var(--red)'};">${(a.pointsAwarded??0)>=0?'+':''}${(a.pointsAwarded??0).toLocaleString()}</td>
         </tr>`).join('');
-      revealHTML = `
+      resultsHTML = `
         <div class="highlight-box green" style="margin-top:12px;">
           <strong>Respuestas correctas:</strong> ${ex.fields.map(f=>`${f.key} = ${f.correct}`).join(' · ')}
         </div>
         <table class="reveal-table"><tr><th>Alumno</th><th>Apuesta</th><th>Respuestas</th><th>Pts</th></tr>${rows}</table>`;
+    } else {
+      resultsHTML = `<div class="highlight-box" style="margin-top:12px;">🔒 Los resultados y la pauta se muestran aquí al cerrar las respuestas. Cada alumno ya recibe su corrección al enviar.</div>`;
     }
     body.innerHTML = `
       <div class="ov-title">✏️ ${ex.title}</div>
       ${getExerciseProblem(mod.id)}
-      ${statusHTML}${revealHTML}${actionsHTML}`;
+      ${statusHTML}${resultsHTML}${actionsHTML}`;
   } else {
-    // ── Round de preguntas ──
+    // ── Round: el detalle vive en el proyector (grid 4 cuadrantes) ──
     const round = QUIZ_ROUNDS[mod.id];
-    const qIdx = mod.qIndex || 0;
-    const qz = round.questions[qIdx];
-    const letters = ['A','B','C','D'];
-    const isLast = qIdx >= round.questions.length - 1;
-    // distribución en vivo (los alumnos ya reciben feedback inmediato)
-    const counts = qz.options.map((_,i)=>answers.filter(a=>a.option===i).length);
-    const total = Math.max(1, answered);
-    const optsHTML = qz.options.map((o,i)=>`
-      <div style="margin-top:10px;">
-        <div style="font-size:15px;${i===qz.correct?'color:var(--green);font-weight:800;':''}">${letters[i]}. ${o} ${i===qz.correct?'✓':''}</div>
-        <div class="quiz-bar"><div style="width:${Math.round(counts[i]/total*100)}%;background:${i===qz.correct?'rgba(74,222,128,.5)':'rgba(136,146,176,.3)'};"></div>
-        <span>${counts[i]}</span></div>
-      </div>`).join('');
-    const actionsHTML = `
-      <div class="mod-actions">
-        ${!isLast ? `<button class="gmb go" onclick="nextRoundQuestion()">▶ Siguiente pregunta (${qIdx+2}/${round.questions.length})</button>` : ''}
-        <button class="gmb ${isLast?'reveal':''}" onclick="clearModule()">🏁 Terminar round</button>
-        <button class="gmb" onclick="closeOverlay('ov-module')">👁 Ocultar panel (sigue abierto)</button>
-      </div>`;
     body.innerHTML = `
-      <div class="ov-title">❓ ${round.title} <span style="font-size:13px;color:var(--muted);">Pregunta ${qIdx+1}/${round.questions.length} · +${QUIZ_BASE_PTS} pts + ⚡${QUIZ_SPEED_PTS} rapidez</span></div>
-      <div class="content-card"><h3 style="font-size:20px;color:var(--text);">${qz.q}</h3>${optsHTML}</div>
-      ${statusHTML}${actionsHTML}`;
+      <div class="ov-title">❓ ${round.title}</div>
+      <p style="font-size:13px;color:var(--muted);">Las 4 preguntas se proyectan en la pantalla principal con las respuestas en vivo. Las correctas aparecen al presionar "Revelar".</p>
+      ${statusHTML}
+      <div class="mod-actions">
+        ${!sess.revealed ? `<button class="gmb reveal" onclick="revealRound()">👀 Revelar correctas</button>` : ''}
+        <button class="gmb" onclick="clearModule()">🏁 Terminar round</button>
+        <button class="gmb" onclick="closeOverlay('ov-module')">👁 Ocultar panel</button>
+      </div>`;
   }
 }
 
@@ -1101,24 +1432,6 @@ async function reopenModule() {
 async function clearModule() {
   await db.collection('meta').doc('session').update({ module:null, revealed:false });
   closeOverlay('ov-module');
-}
-
-// ── Revelar y puntuar (solo ejercicios Excel; los rounds puntúan al instante) ──
-async function revealModule() {
-  const mod = state.session?.module;
-  if (!mod || mod.kind !== 'exercise') return;
-  await db.collection('meta').doc('session').update({ 'module.isOpen': false });
-  const ansSnap = await db.collection('answers').where('moduleId','==',mod.id).get();
-  const batch = db.batch();
-  ansSnap.forEach(d => {
-    const ans = d.data();
-    if (ans.pointsAwarded !== null && ans.pointsAwarded !== undefined) return; // ya puntuado
-    const finalPts = calculateScore(EXERCISES[mod.id], ans).finalPts;
-    batch.update(d.ref, { pointsAwarded: finalPts });
-    batch.update(db.collection('students').doc(ans.uid), { score: firebase.firestore.FieldValue.increment(finalPts) });
-  });
-  await batch.commit();
-  await db.collection('meta').doc('session').update({ revealed:true });
 }
 
 function calculateScore(ex, ans) {
@@ -1172,7 +1485,7 @@ function renderRace() {
       el.style.left = leftPct + '%';
       const frac = Math.max(0, Math.min(1, (s.score||0)/maxScore));
       el.style.bottom = `calc(${(frac*100).toFixed(1)}% - ${(frac*58).toFixed(0)}px)`; // 58px = alto del chip
-      el.classList.toggle('answered', !!state.allAnswers[s.id] && !!state.session?.module?.isOpen);
+      el.classList.toggle('answered', answeredUids().has(s.id) && !!state.session?.module?.isOpen);
     });
     lane.querySelectorAll('.racer').forEach(el => { if (!seen.has(el.dataset.uid)) el.remove(); });
   });
@@ -1235,11 +1548,17 @@ function exportScores() {
 
 async function doResetGame() {
   closeOverlay('ov-reset');
-  const stuSnap = await db.collection('students').get();
-  const ansSnap = await db.collection('answers').get();
+  const [stuSnap, ansSnap, reactSnap, voteSnap] = await Promise.all([
+    db.collection('students').get(),
+    db.collection('answers').get(),
+    db.collection('reactions').get(),
+    db.collection('coinVotes').get()
+  ]);
   const batch = db.batch();
   stuSnap.forEach(d => { if (!d.data().isGM) batch.delete(d.ref); });
   ansSnap.forEach(d => batch.delete(d.ref));
+  reactSnap.forEach(d => batch.delete(d.ref));
+  voteSnap.forEach(d => batch.delete(d.ref));
   batch.set(db.collection('meta').doc('counter'), { n: 0 });
   await batch.commit();
   await db.collection('meta').doc('session').set({ slide: state.session?.slide||1, module:null, revealed:false, resetAt: Date.now() });
@@ -1255,7 +1574,7 @@ document.addEventListener('keydown', e => {
   if (!state.isGM) return;
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
   const anyOverlay = document.querySelector('.overlay.active');
-  if (e.key === 'Escape' && anyOverlay) { anyOverlay.classList.remove('active'); if(anyOverlay.id==='ov-chart') destroyActiveChart(); return; }
+  if (e.key === 'Escape' && anyOverlay) { anyOverlay.classList.remove('active'); return; }
   if (anyOverlay) return;
   if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); navSlide(1); }
   if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); navSlide(-1); }
@@ -1266,68 +1585,48 @@ document.addEventListener('keydown', e => {
 });
 
 // ════════════════════════════════════════════════════
-// 📊 MÓDULOS DE CONSULTA — overlays con gráficos
+// 📊 SLIDES INTERACTIVAS — widgets (GM proyecta, alumno en su teléfono)
 // ════════════════════════════════════════════════════
-function openChartOverlay(id) {
-  document.querySelectorAll('.menu-pop').forEach(m=>m.classList.remove('open'));
-  const body = document.getElementById('chart-body');
-  body.innerHTML = getChartHTML(id);
-  showOverlay('ov-chart');
-  setTimeout(()=>initChartModule(id), 60);
-}
-function closeChartOverlay() {
-  closeOverlay('ov-chart');
-  destroyActiveChart();
-}
-function getChartHTML(id) {
-  const t = CHART_MODULES[id].title;
-  if (id === 'normal') return `
-    <div class="ov-title">${t}</div>
+function widgetHTML(w) {
+  if (w === 'ztable') return `
+    <div class="w-title">📈 Distribución Normal — mueve z</div>
     <div class="chart-container"><canvas id="normal-chart"></canvas></div>
     <div class="slider-row">
       <span class="slider-sub">z =</span><span class="slider-val" id="z-display">1.00</span>
       <input type="range" id="z-slider" min="-3.5" max="3.5" step="0.05" value="1.0" oninput="updateZSlider(this.value)">
       <span class="slider-sub">P(Z≤z) =</span><span class="slider-val" id="z-pct-display">84.1%</span>
     </div>
-    <div class="highlight-box" style="margin-top:12px;">Mueve el slider: el área verde es la probabilidad acumulada. Con 95% de servicio → z = 1.645.</div>`;
-  if (id === 'cuco') return `
-    <div class="ov-title">${t}</div>
-    <p style="color:var(--muted);font-size:13px;">Demanda ~ N(100, 25) · Cᵤ = $100 · C₀ = $20 → CR = 0.833 → z ≈ 0.97 → Q* ≈ 124</p>
-    <div class="chart-container"><canvas id="cucoprofit-chart"></canvas></div>
+    <div class="highlight-box" style="margin-top:12px;">Mueve el slider en tu teléfono: el área verde es el % de la distribución cubierto hasta z. Con 95% de servicio → z = 1.645.</div>`;
+  if (w === 'simcam' || w === 'simej1') {
+    const c = SIMS[w];
+    return `
+    <div class="w-title">${c.title}</div>
+    <p style="color:var(--muted);font-size:13px;">${c.sub}</p>
+    <div class="chart-container"><canvas id="sim-chart"></canvas></div>
     <div class="slider-row">
-      <span class="slider-sub">Q =</span><span class="slider-val" id="cucoq-display">—</span>
-      <input type="range" min="40" max="175" step="5" value="124" oninput="updateCuCoQ(this.value)">
-      <span class="slider-sub">Ganancia:</span><span class="slider-val" id="cucoq-profit">—</span>
-      <span class="slider-sub" id="cucoq-diff"></span>
+      <span class="slider-sub">Q =</span><span class="slider-val" id="simq-display">—</span>
+      <input type="range" id="simq-slider" min="${c.min}" max="${c.max}" step="1" value="${c.def}" oninput="updateSimQ('${w}', this.value)">
+      <span class="slider-sub">Ganancia esperada:</span><span class="slider-val" id="simq-profit">—</span>
+      <span class="slider-sub" id="simq-diff"></span>
     </div>`;
-  if (id === 'mono') return `
-    <div class="ov-title">${t}</div>
-    <p style="color:var(--muted);font-size:13px;">Camisetas: Demanda ~ N(2400, 350) · Cᵤ = $10 · C₀ = $5 → CR = 0.667 → z ≈ 0.43 → Q* ≈ 2551</p>
-    <div class="chart-container"><canvas id="mono-profit-chart"></canvas></div>
-    <div class="slider-row">
-      <span class="slider-sub">Q =</span><span class="slider-val" id="monoq-display">—</span>
-      <input type="range" id="monoq-slider" min="1600" max="3200" step="50" value="2400" oninput="updateMonoQ(this.value)">
-      <span class="slider-sub">Ganancia:</span><span class="slider-val" id="monoq-profit">—</span>
-      <span class="slider-sub" id="monoq-diff"></span>
-    </div>`;
-  if (id === 'eoq') return `
-    <div class="ov-title">${t}</div>
+  }
+  if (w === 'eoq') return `
+    <div class="w-title">⛽ EOQ — Curvas de costo (GASOFA)</div>
     <p style="color:var(--muted);font-size:13px;">GASOFA: D = 48.000 L/año · S = $7.500 · iC = $45/L/año → Q* = √(2SD/iC)</p>
     <div class="chart-container"><canvas id="eoq-chart"></canvas></div>
     <div class="highlight-box gold" style="margin-top:12px;">En Q* el costo de pedir y el de almacenar son <strong>iguales</strong> — la curva total es plana cerca del óptimo.</div>`;
-  if (id === 'psim') return `
-    <div class="ov-title">${t}</div>
+  if (w === 'psim') return `
+    <div class="w-title">📅 Sistema P — Simulación del inventario</div>
     <p style="color:var(--muted);font-size:13px;">Cajas: D = 200/día · P = 5 días · L = 4 días · T = 2.542 · IS = 742</p>
     <div class="chart-container"><canvas id="p-sim-chart"></canvas></div>
     <div class="highlight-box" style="margin-top:12px;">El inventario baja con la demanda; en cada revisión (cada 5 días) se ordena hasta T y el pedido llega 4 días después.</div>`;
   return '';
 }
-function initChartModule(id) {
-  if (id === 'normal') { initNormalChart(1.0); updateZSlider(1.0); }
-  if (id === 'cuco') initCuCoChart();
-  if (id === 'mono') initMonoSimChart();
-  if (id === 'eoq') initEOQChart();
-  if (id === 'psim') initPSimChart();
+function initWidget(w) {
+  if (w === 'ztable') { initNormalChart(1.0); updateZSlider(1.0); }
+  if (w === 'simcam' || w === 'simej1') initSimChart(w);
+  if (w === 'eoq') initEOQChart();
+  if (w === 'psim') initPSimChart();
 }
 function destroyActiveChart() {
   if (state.activeChart) { try { state.activeChart.destroy(); } catch(e){} state.activeChart=null; }
@@ -1382,19 +1681,22 @@ function updateZSlider(val) {
   }
 }
 
-function initCuCoChart() {
-  const canvas = document.getElementById('cucoprofit-chart');
+// ── Simulación mono-periodo genérica (camisetas / ejercicio 1) ──
+// Curva de ganancia esperada por Monte Carlo; el alumno mueve Q libremente
+// y el valor se interpola sobre la curva simulada.
+function initSimChart(w) {
+  const canvas = document.getElementById('sim-chart');
   if (!canvas) return;
-  const mu=100, sigma=25, Cu=100, Co=20;
+  const c = SIMS[w];
   const qVals=[], profits=[];
-  for(let q=40; q<=175; q+=2) {
+  for (let q=c.min; q<=c.max; q+=c.sample) {
     let total=0;
-    for(let s=0; s<1200; s++) {
+    for (let s=0; s<1500; s++) {
       const u1=Math.random()||1e-9, u2=Math.random();
-      const d = mu + sigma*Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
-      total += Math.min(d,q)*Cu - Math.max(0,q-d)*Co;
+      const d = c.mu + c.sigma*Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+      total += Math.min(d,q)*c.Cu - Math.max(0,q-d)*c.Co;
     }
-    qVals.push(q); profits.push(Math.round(total/1200));
+    qVals.push(q); profits.push(Math.round(total/1500));
   }
   const maxP = Math.max(...profits);
   const optQ = qVals[profits.indexOf(maxP)];
@@ -1411,52 +1713,55 @@ function initCuCoChart() {
       responsive:true, maintainAspectRatio:false,
       interaction:{mode:'index', intersect:false},
       scales:{
-        x:{type:'linear',title:{display:true,text:'Q pedido (gorros)',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:8},grid:{color:'rgba(255,255,255,0.05)'}},
+        x:{type:'linear',title:{display:true,text:'Q ('+c.unit+')',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:8},grid:{color:'rgba(255,255,255,0.05)'}},
         y:{title:{display:true,text:'Ganancia esperada ($)',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:6,callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(255,255,255,0.05)'}}
       },
       plugins:{
         legend:{display:false},
-        tooltip:{callbacks:{label:ctx=>`Ganancia: $${ctx.parsed.y.toLocaleString()}`,title:items=>`Q = ${items[0].parsed.x} gorros`}},
+        tooltip:{callbacks:{label:ctx=>`Ganancia: $${ctx.parsed.y.toLocaleString()}`,title:items=>`Q = ${items[0].parsed.x.toLocaleString()} ${c.unit}`}},
         annotation:{annotations:{
           opt:{type:'line',xMin:optQ,xMax:optQ,borderColor:'#4ade80',borderWidth:2.5,
-               label:{display:true,content:'Q* = '+optQ,position:'end',color:'#4ade80',font:{size:12,weight:'bold'},backgroundColor:'rgba(10,14,26,0.8)'}},
-          cur:{type:'line',xMin:optQ,xMax:optQ,borderColor:'#fbbf24',borderWidth:2,borderDash:[7,4],
-               label:{display:true,content:'Q = '+optQ,position:'start',color:'#fbbf24',font:{size:11},backgroundColor:'rgba(10,14,26,0.8)'}}
+               label:{display:true,content:'Q* ≈ '+optQ.toLocaleString(),position:'end',color:'#4ade80',font:{size:12,weight:'bold'},backgroundColor:'rgba(10,14,26,0.8)'}},
+          cur:{type:'line',xMin:c.def,xMax:c.def,borderColor:'#fbbf24',borderWidth:2,borderDash:[7,4],
+               label:{display:true,content:'Q = '+c.def.toLocaleString(),position:'start',color:'#fbbf24',font:{size:11},backgroundColor:'rgba(10,14,26,0.8)'}}
         }}
       }
     }
   });
-  state.activeChart._cucoData = {qVals, profits, optQ, maxP};
-  updateCuCoQDisplay(optQ);
+  state.activeChart._simData = {qVals, profits, optQ, maxP, cfg:c};
+  updateSimQ(w, c.def);
 }
 
-function updateCuCoQ(val) {
+function simProfitAt(q) {
+  const {qVals, profits} = state.activeChart._simData;
+  if (q <= qVals[0]) return profits[0];
+  if (q >= qVals[qVals.length-1]) return profits[profits.length-1];
+  let i = 0;
+  while (qVals[i+1] < q) i++;
+  const t = (q - qVals[i]) / (qVals[i+1] - qVals[i]);
+  return Math.round(profits[i] + t*(profits[i+1]-profits[i]));
+}
+
+function updateSimQ(w, val) {
+  if (!state.activeChart?._simData) { initSimChart(w); return; }
   const q = parseInt(val);
-  if (!state.activeChart?._cucoData) { initCuCoChart(); return; }
-  const {qVals} = state.activeChart._cucoData;
-  const nearest = qVals.reduce((a,b)=>Math.abs(b-q)<Math.abs(a-q)?b:a);
-  updateCuCoQDisplay(nearest);
-  state.activeChart.options.plugins.annotation.annotations.cur.xMin = nearest;
-  state.activeChart.options.plugins.annotation.annotations.cur.xMax = nearest;
-  state.activeChart.options.plugins.annotation.annotations.cur.label.content = 'Q = '+nearest;
-  state.activeChart.update('none');
-}
-
-function updateCuCoQDisplay(q) {
-  const disp = document.getElementById('cucoq-display');
-  const pdisp = document.getElementById('cucoq-profit');
-  const ddisp = document.getElementById('cucoq-diff');
-  if (!state.activeChart?._cucoData) return;
-  const {qVals, profits, maxP} = state.activeChart._cucoData;
-  const idx = qVals.indexOf(qVals.reduce((a,b)=>Math.abs(b-q)<Math.abs(a-q)?b:a));
-  const profit = profits[idx] ?? 0;
+  const {optQ, maxP, cfg} = state.activeChart._simData;
+  const profit = simProfitAt(q);
   const diff = profit - maxP;
-  if (disp) disp.textContent = q;
+  const disp = document.getElementById('simq-display');
+  const pdisp = document.getElementById('simq-profit');
+  const ddisp = document.getElementById('simq-diff');
+  if (disp) disp.textContent = q.toLocaleString();
   if (pdisp) pdisp.textContent = '$'+profit.toLocaleString();
   if (ddisp) {
-    ddisp.textContent = diff === 0 ? '= óptimo' : (diff > 0 ? '+'+diff.toLocaleString() : diff.toLocaleString())+' vs Q*';
-    ddisp.style.color = diff === 0 ? 'var(--green)' : 'var(--red)';
+    const near = Math.abs(q - optQ) <= cfg.sample;
+    ddisp.textContent = near ? '✓ ¡estás en el óptimo!' : diff.toLocaleString()+' vs Q*';
+    ddisp.style.color = near ? 'var(--green)' : 'var(--red)';
   }
+  const cur = state.activeChart.options.plugins.annotation.annotations.cur;
+  cur.xMin = q; cur.xMax = q;
+  cur.label.content = 'Q = '+q.toLocaleString();
+  state.activeChart.update('none');
 }
 
 function initEOQChart() {
@@ -1487,84 +1792,6 @@ function initEOQChart() {
         annotation:{annotations:{line1:{type:'line',xMin:Qopt,xMax:Qopt,borderColor:'#fbbf24',borderWidth:2.5,borderDash:[6,4],label:{display:true,content:'Q* = '+Math.round(Qopt)+' L',position:'end',color:'#fbbf24',font:{size:13,weight:'bold'},backgroundColor:'rgba(10,14,26,0.8)'}}}}}
     }
   });
-}
-
-function initMonoSimChart() {
-  const canvas = document.getElementById('mono-profit-chart');
-  if (!canvas) return;
-  const mu=2400,sigma=350,Cu=10,Co=5;
-  const qVals=[], profits=[];
-  for(let q=1600;q<=3200;q+=50) {
-    let totalProfit=0;
-    for(let s=0;s<2000;s++) {
-      const u1=Math.random()||1e-9, u2=Math.random();
-      const d=mu+sigma*Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
-      totalProfit += Math.min(d,q)*Cu - Math.max(0,q-d)*Co;
-    }
-    qVals.push(q); profits.push(Math.round(totalProfit/2000));
-  }
-  const maxP=Math.max(...profits), optQ=qVals[profits.indexOf(maxP)];
-  const sliderEl = document.getElementById('monoq-slider');
-  const initQ = sliderEl ? parseInt(sliderEl.value) : mu;
-  const nearest = qVals.reduce((a,b)=>Math.abs(b-initQ)<Math.abs(a-initQ)?b:a);
-  destroyActiveChart();
-  state.activeChart = new Chart(canvas,{
-    type:'line',
-    data:{datasets:[{
-      label:'Ganancia esperada', parsing:false,
-      data:qVals.map((q,i)=>({x:q,y:profits[i]})),
-      borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,0.1)',
-      fill:true,tension:0.4,pointRadius:0,borderWidth:2.5
-    }]},
-    options:{responsive:true, maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      scales:{
-        x:{type:'linear',title:{display:true,text:'Q ordenado (camisetas)',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:8},grid:{color:'rgba(255,255,255,0.05)'}},
-        y:{title:{display:true,text:'Ganancia esperada ($)',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:6,callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(255,255,255,0.05)'}}
-      },
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:ctx=>`Ganancia: $${ctx.parsed.y.toLocaleString()}`,title:items=>`Q = ${items[0].parsed.x.toLocaleString()} unidades`}},
-        annotation:{annotations:{
-          opt:{type:'line',xMin:optQ,xMax:optQ,borderColor:'#4ade80',borderWidth:2.5,
-               label:{display:true,content:'Q* = '+optQ,position:'end',color:'#4ade80',font:{size:12,weight:'bold'},backgroundColor:'rgba(10,14,26,0.8)'}},
-          cur:{type:'line',xMin:nearest,xMax:nearest,borderColor:'#fbbf24',borderWidth:2,borderDash:[7,4],
-               label:{display:true,content:'Q = '+nearest,position:'start',color:'#fbbf24',font:{size:11},backgroundColor:'rgba(10,14,26,0.8)'}}
-        }}
-      }
-    }
-  });
-  state.activeChart._monoData = {qVals, profits, optQ, maxP};
-  updateMonoQDisplay(nearest);
-}
-
-function updateMonoQ(val) {
-  const q = parseInt(val);
-  if (!state.activeChart?._monoData) { initMonoSimChart(); return; }
-  const {qVals} = state.activeChart._monoData;
-  const nearest = qVals.reduce((a,b)=>Math.abs(b-q)<Math.abs(a-q)?b:a);
-  updateMonoQDisplay(nearest);
-  state.activeChart.options.plugins.annotation.annotations.cur.xMin = nearest;
-  state.activeChart.options.plugins.annotation.annotations.cur.xMax = nearest;
-  state.activeChart.options.plugins.annotation.annotations.cur.label.content = 'Q = '+nearest.toLocaleString();
-  state.activeChart.update('none');
-}
-
-function updateMonoQDisplay(q) {
-  if (!state.activeChart?._monoData) return;
-  const {qVals, profits, maxP} = state.activeChart._monoData;
-  const idx = qVals.indexOf(qVals.reduce((a,b)=>Math.abs(b-q)<Math.abs(a-q)?b:a));
-  const profit = profits[idx] ?? 0;
-  const diff = profit - maxP;
-  const disp = document.getElementById('monoq-display');
-  const pdisp = document.getElementById('monoq-profit');
-  const ddisp = document.getElementById('monoq-diff');
-  if (disp) disp.textContent = q.toLocaleString();
-  if (pdisp) pdisp.textContent = '$'+profit.toLocaleString();
-  if (ddisp) {
-    ddisp.textContent = diff === 0 ? '✓ Q óptimo' : diff.toLocaleString()+' vs Q*';
-    ddisp.style.color = diff === 0 ? 'var(--green)' : 'var(--red)';
-  }
 }
 
 function initPSimChart() {
@@ -1620,6 +1847,466 @@ function initPSimChart() {
       }
     }
   });
+}
+
+// ════════════════════════════════════════════════════
+// 😊 REACCIONES — alumno envía (cada 3 min), GM las ve flotar
+// ════════════════════════════════════════════════════
+function buildReactPanel() {
+  const panel = document.getElementById('react-panel');
+  if (!panel) return;
+  panel.innerHTML = REACTIONS.map(e =>
+    `<button class="r-btn" onclick="sendReaction('${e}')" aria-label="Enviar reacción ${e}">${e}</button>`).join('');
+}
+function toggleReactPanel() {
+  document.getElementById('react-panel').classList.toggle('open');
+}
+async function sendReaction(emoji) {
+  const last = parseInt(localStorage.getItem('lastReactAt') || '0');
+  const left = REACTION_COOLDOWN_MS - (Date.now() - last);
+  document.getElementById('react-panel').classList.remove('open');
+  if (left > 0) {
+    const m = Math.ceil(left/60000);
+    showToast(`⏳ Puedes reaccionar de nuevo en ${m} minuto${m>1?'s':''}`, 'err');
+    return;
+  }
+  localStorage.setItem('lastReactAt', String(Date.now()));
+  floatReactionLocal(emoji);
+  await db.collection('reactions').add({
+    emoji, uid: state.uid,
+    name: firstName(state.student?.name), number: state.student?.number || 0,
+    teamId: state.student?.teamId || 'A',
+    ts: Date.now(), sentAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+function floatReactionLocal(emoji) {
+  const host = document.getElementById('st-mirror');
+  if (!host) return;
+  spawnFloat(host, emoji, null);
+}
+function floatReactionOnGM(r) {
+  const host = document.getElementById('gm-stage');
+  if (!host) return;
+  spawnFloat(host, r.emoji, `${r.number} · ${r.name||''}`, teamColor(r.teamId));
+}
+function spawnFloat(host, emoji, label, color) {
+  const el = document.createElement('div');
+  el.className = 'float-react';
+  el.style.left = (8 + Math.random()*80) + '%';
+  el.innerHTML = `<span class="fr-e">${emoji}</span>` +
+    (label ? `<span class="fr-n" style="border:1px solid ${color||'transparent'};">${label}</span>` : '');
+  host.appendChild(el);
+  setTimeout(()=>el.remove(), 4600);
+}
+
+// ════════════════════════════════════════════════════
+// 🎉 EVENTOS — banner común (alumnos)
+// ════════════════════════════════════════════════════
+function handleActiveEvent() {
+  const ev = state.session?.activeEvent;
+  if (!ev || ev.triggeredAt === state.lastEventAt) return;
+  state.lastEventAt = ev.triggeredAt;
+  if (ev.type === 'ruleta') showEventBanner('🎰', `¡La ruleta eligió a <b>#${ev.data.number} ${ev.data.name}</b>!<br><span style="color:var(--gold);">+${ev.data.pts} puntos</span>`);
+  if (ev.type === 'smite') showEventBanner('⚡', `¡SMITE! <b>#${ev.data.number} ${ev.data.name}</b> fue castigado<br><span style="color:var(--red);">−${ev.data.pts} puntos</span>`);
+}
+function showEventBanner(icon, html) {
+  const b = document.getElementById('event-banner');
+  b.querySelector('.eb-icon').textContent = icon;
+  b.querySelector('.eb-text').innerHTML = html;
+  b.style.display = 'block';
+  clearTimeout(b._t);
+  b._t = setTimeout(()=>{ b.style.display='none'; }, 4500);
+}
+async function broadcastEvent(type, data) {
+  await db.collection('meta').doc('session').update({ activeEvent: { type, data, triggeredAt: Date.now() } });
+  setTimeout(async ()=>{ try { await db.collection('meta').doc('session').update({ activeEvent: null }); } catch(e){} }, 6000);
+}
+
+// ── 🎰 Ruleta ──
+let ruletaTarget = null, ruletaPts = 0, ruletaSpinning = false;
+function showRuletaWheel() {
+  document.querySelectorAll('.menu-pop').forEach(m=>m.classList.remove('open'));
+  const students = Object.values(state.allStudents).filter(s=>!s.isGM);
+  if (!students.length) { showToast('No hay alumnos conectados', 'err'); return; }
+  ruletaTarget = null; ruletaPts = 0; ruletaSpinning = false;
+  document.getElementById('ruleta-result').textContent = '';
+  const btn = document.getElementById('ruleta-spin-btn');
+  btn.disabled = false; btn.textContent = '¡Girar! 🎰'; btn.onclick = spinRuleta;
+  showOverlay('ov-ruleta');
+  drawRuletaWheel(students, 0);
+}
+function drawRuletaWheel(students, angle) {
+  const canvas = document.getElementById('ruleta-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, cx = W/2, cy = W/2, r = W/2 - 6;
+  const n = students.length;
+  const colors = ['#60a5fa','#fb923c','#4ade80','#c084fc','#fbbf24','#f87171','#34d399','#f472b6'];
+  ctx.clearRect(0,0,W,W);
+  for (let i=0;i<n;i++) {
+    const start = angle + (2*Math.PI/n)*i, end = start + 2*Math.PI/n;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,end);
+    ctx.fillStyle = colors[i%colors.length]; ctx.fill();
+    ctx.strokeStyle='#0a0e1a'; ctx.lineWidth=2; ctx.stroke();
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(start+(end-start)/2);
+    ctx.textAlign='right'; ctx.fillStyle='#fff'; ctx.font=`bold ${Math.min(14,220/n)}px sans-serif`;
+    ctx.fillText('#'+students[i].number+' '+firstName(students[i].name), r-10, 5);
+    ctx.restore();
+  }
+  ctx.beginPath(); ctx.arc(cx,cy,16,0,2*Math.PI); ctx.fillStyle='#0a0e1a'; ctx.fill();
+  ctx.fillStyle='#e8ecf5'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('🎰', cx, cy);
+}
+function spinRuleta() {
+  if (ruletaSpinning) return;
+  ruletaSpinning = true;
+  const btn = document.getElementById('ruleta-spin-btn');
+  btn.disabled = true;
+  document.getElementById('ruleta-result').textContent = '';
+  const students = Object.values(state.allStudents).filter(s=>!s.isGM);
+  const winIdx = Math.floor(Math.random()*students.length);
+  const pts = [100,150,200,300,500][Math.floor(Math.random()*5)];
+  const totalSpins = 6 + Math.random()*4;
+  // el puntero está arriba (-90°): centrar al ganador bajo el puntero
+  const targetAngle = -Math.PI/2 - (2*Math.PI/students.length)*(winIdx + 0.5);
+  const finalAngle = totalSpins*2*Math.PI + targetAngle;
+  let startTime = null;
+  const duration = 4000;
+  function animate(ts) {
+    if (!startTime) startTime = ts;
+    const t = Math.min((ts-startTime)/duration, 1);
+    const ease = 1 - Math.pow(1-t, 4);
+    drawRuletaWheel(students, ease*finalAngle);
+    if (t < 1) { requestAnimationFrame(animate); }
+    else {
+      ruletaSpinning = false;
+      ruletaTarget = students[winIdx];
+      ruletaPts = pts;
+      document.getElementById('ruleta-result').innerHTML =
+        `🎉 <strong>#${ruletaTarget.number} ${ruletaTarget.name}</strong> gana <span style="color:var(--gold)">+${pts} pts</span>`;
+      btn.textContent = '✅ Confirmar premio';
+      btn.disabled = false;
+      btn.onclick = confirmRuleta;
+    }
+  }
+  requestAnimationFrame(animate);
+}
+async function confirmRuleta() {
+  if (!ruletaTarget) return;
+  closeOverlay('ov-ruleta');
+  await db.collection('students').doc(ruletaTarget.id).update({ score: firebase.firestore.FieldValue.increment(ruletaPts) });
+  await broadcastEvent('ruleta', { name: firstName(ruletaTarget.name), number: ruletaTarget.number, pts: ruletaPts });
+  showToast(`🎰 +${ruletaPts} pts para #${ruletaTarget.number} ${ruletaTarget.name}`, 'ok');
+}
+
+// ── ⚡ Smite ──
+function showSmitePicker() {
+  document.querySelectorAll('.menu-pop').forEach(m=>m.classList.remove('open'));
+  const students = Object.values(state.allStudents).filter(s=>!s.isGM).sort((a,b)=>a.number-b.number);
+  if (!students.length) { showToast('No hay alumnos conectados', 'err'); return; }
+  document.getElementById('smite-picker').innerHTML = students.map(s=>`
+    <div class="picker-row" onclick="applySmite('${s.id}')">
+      <span class="who-dot" style="background:${teamColor(s.teamId)};">${s.number}</span>
+      <span style="flex:1;font-weight:700;">${s.name}</span>
+      <span style="color:var(--gold);font-weight:700;">${(s.score||0).toLocaleString()} pts</span>
+    </div>`).join('');
+  showOverlay('ov-smite');
+}
+async function applySmite(uid) {
+  closeOverlay('ov-smite');
+  const s = state.allStudents[uid];
+  if (!s) return;
+  const pts = Math.max(50, Math.round((s.score||0)*0.05/10)*10);
+  await db.collection('students').doc(uid).update({ score: firebase.firestore.FieldValue.increment(-pts) });
+  await broadcastEvent('smite', { name: firstName(s.name), number: s.number, pts });
+  showToast(`⚡ Smite: −${pts} pts para #${s.number} ${s.name}`, 'ok');
+}
+
+// ════════════════════════════════════════════════════
+// 🪙 DOBLE O NADA — votación por equipo (20s, ≥66% de acuerdo)
+//    Si el equipo acepta: moneda al aire → ganan (todos ×2) o pierden (todos a 0)
+// ════════════════════════════════════════════════════
+async function startCoinEvent() {
+  document.querySelectorAll('.menu-pop').forEach(m=>m.classList.remove('open'));
+  if (state.session?.coinEvent) { showToast('Ya hay un Doble o Nada en curso', 'err'); return; }
+  const votesSnap = await db.collection('coinVotes').get();
+  const batch = db.batch();
+  votesSnap.forEach(d => batch.delete(d.ref));
+  await batch.commit();
+  await db.collection('meta').doc('session').update({
+    coinEvent: { phase:'vote', id: Date.now(), endsAt: Date.now() + 20000 }
+  });
+}
+
+function handleCoinEvent() {
+  const ce = state.session?.coinEvent;
+  const key = ce ? `${ce.phase}:${ce.id}` : null;
+  if (key === state.lastCoinPhase) {
+    if (!ce && document.getElementById('ov-coin').classList.contains('active')) closeOverlay('ov-coin');
+    return;
+  }
+  state.lastCoinPhase = key;
+  clearInterval(state.coinCountdown);
+  if (state.coinVotesUnsub) { state.coinVotesUnsub(); state.coinVotesUnsub = null; }
+  if (!ce) { closeOverlay('ov-coin'); return; }
+
+  if (ce.phase === 'vote') {
+    state.myCoinVote = null;
+    renderCoinVote(ce);
+    showOverlay('ov-coin');
+    // countdown compartido
+    state.coinCountdown = setInterval(()=>{
+      const left = Math.max(0, ce.endsAt - Date.now());
+      const el = document.getElementById('coin-cd-num');
+      const bar = document.getElementById('coin-cd-fill');
+      if (el) el.textContent = Math.ceil(left/1000);
+      if (bar) bar.style.width = (left/20000*100)+'%';
+      if (left <= 0) clearInterval(state.coinCountdown);
+    }, 250);
+    if (state.isGM) {
+      // tallies en vivo + resolución al terminar el tiempo
+      state.coinVotesUnsub = db.collection('coinVotes').onSnapshot(snap => {
+        const votes = []; snap.forEach(d=>{ if (d.data().coinId===ce.id) votes.push(d.data()); });
+        ['A','B'].forEach(t=>{
+          const el = document.getElementById('coin-tally-'+t);
+          if (!el) return;
+          const tv = votes.filter(v=>v.teamId===t);
+          const yes = tv.filter(v=>v.vote).length;
+          el.textContent = `${yes} sí / ${tv.length-yes} no`;
+        });
+      });
+      clearTimeout(state.coinTimer);
+      state.coinTimer = setTimeout(()=>resolveCoinEvent(ce), Math.max(0, ce.endsAt - Date.now()) + 400);
+    }
+  } else if (ce.phase === 'result') {
+    renderCoinResult(ce);
+    showOverlay('ov-coin');
+    if (state.isGM) {
+      clearTimeout(state.coinTimer);
+      state.coinTimer = setTimeout(async ()=>{
+        try { await db.collection('meta').doc('session').update({ coinEvent: null }); } catch(e){}
+      }, 11000);
+    }
+  }
+}
+
+function renderCoinVote(ce) {
+  const body = document.getElementById('coin-body');
+  const isGM = state.isGM;
+  const head = `
+    <div style="font-size:52px;">🪙</div>
+    <div class="ov-title" style="text-align:center;">DOBLE O NADA</div>
+    <p style="font-size:14px;line-height:1.6;">Cada equipo decide: si <b>≥66%</b> vota que sí, el equipo lanza la moneda.<br>
+    <span style="color:var(--green);font-weight:800;">Cara: todos duplican sus puntos</span> ·
+    <span style="color:var(--red);font-weight:800;">Sello: todos quedan en 0</span></p>
+    <div class="cd-bar"><div id="coin-cd-fill" style="width:100%;"></div></div>
+    <div style="font-size:28px;font-weight:900;color:var(--gold);margin-top:6px;"><span id="coin-cd-num">20</span>s</div>`;
+  if (isGM) {
+    body.innerHTML = head + `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;">
+        <div style="border:2px solid var(--A);border-radius:12px;padding:12px;">
+          <div style="color:var(--A);font-weight:800;">🔵 Equipo Azul</div>
+          <div id="coin-tally-A" style="font-size:20px;font-weight:800;margin-top:4px;">0 sí / 0 no</div>
+        </div>
+        <div style="border:2px solid var(--B);border-radius:12px;padding:12px;">
+          <div style="color:var(--B);font-weight:800;">🟠 Equipo Naranja</div>
+          <div id="coin-tally-B" style="font-size:20px;font-weight:800;margin-top:4px;">0 sí / 0 no</div>
+        </div>
+      </div>
+      <p style="color:var(--muted);font-size:12px;margin-top:10px;">Los alumnos están votando en sus teléfonos...</p>`;
+  } else {
+    body.innerHTML = head + `
+      <div id="coin-vote-area">
+        <div class="vote-btns">
+          <button class="vote-btn yes" onclick="castCoinVote(true)">🪙 ¡SÍ, juguemos!</button>
+          <button class="vote-btn no" onclick="castCoinVote(false)">🙅 No, gracias</button>
+        </div>
+      </div>`;
+  }
+}
+
+async function castCoinVote(v) {
+  const ce = state.session?.coinEvent;
+  if (!ce || ce.phase !== 'vote' || Date.now() > ce.endsAt) return;
+  state.myCoinVote = v;
+  const area = document.getElementById('coin-vote-area');
+  if (area) area.innerHTML = `<p style="font-size:16px;font-weight:800;margin-top:14px;">${v?'🪙 Votaste SÍ':'🙅 Votaste NO'} — esperando a tu equipo...</p>`;
+  await db.collection('coinVotes').doc(state.uid).set({
+    coinId: ce.id, uid: state.uid, teamId: state.student?.teamId || 'A', vote: v
+  });
+}
+
+async function resolveCoinEvent(ce) {
+  // solo el GM resuelve; releer por si ya se resolvió
+  const sessSnap = await db.collection('meta').doc('session').get();
+  const cur = sessSnap.data()?.coinEvent;
+  if (!cur || cur.id !== ce.id || cur.phase !== 'vote') return;
+  const votesSnap = await db.collection('coinVotes').get();
+  const votes = []; votesSnap.forEach(d=>{ if (d.data().coinId===ce.id) votes.push(d.data()); });
+  const results = {};
+  ['A','B'].forEach(t=>{
+    const tv = votes.filter(v=>v.teamId===t);
+    const yes = tv.filter(v=>v.vote).length;
+    const plays = tv.length > 0 && (yes / tv.length) >= 0.66;
+    results[t] = { plays, yes, no: tv.length-yes, win: plays ? Math.random() < 0.5 : null };
+  });
+  // aplicar puntajes
+  const batch = db.batch();
+  Object.values(state.allStudents).filter(s=>!s.isGM).forEach(s=>{
+    const r = results[s.teamId];
+    if (!r || !r.plays) return;
+    const newScore = r.win ? (s.score||0)*2 : 0;
+    batch.update(db.collection('students').doc(s.id), { score: newScore });
+  });
+  await batch.commit();
+  await db.collection('meta').doc('session').update({
+    coinEvent: { phase:'result', id: ce.id, results, resolvedAt: Date.now() }
+  });
+}
+
+function renderCoinResult(ce) {
+  const body = document.getElementById('coin-body');
+  const r = ce.results || {};
+  const anyPlays = r.A?.plays || r.B?.plays;
+  const slot = (t) => {
+    const info = r[t] || {};
+    const T = TEAMS[t];
+    if (!info.plays) return `
+      <div class="coin-slot">
+        <div class="coin ${t}" style="opacity:.25;">🙅</div>
+        <div style="font-weight:800;color:${T.hex};">${T.emoji} ${T.name}</div>
+        <div class="coin-res" style="color:var(--muted);font-size:16px;">No jugó (${info.yes||0} sí / ${info.no||0} no)</div>
+      </div>`;
+    return `
+      <div class="coin-slot">
+        <div class="coin ${t} spin" id="coin-${t}">🪙</div>
+        <div style="font-weight:800;color:${T.hex};">${T.emoji} ${T.name}</div>
+        <div class="coin-res" id="coin-res-${t}"></div>
+      </div>`;
+  };
+  body.innerHTML = `
+    <div class="ov-title" style="text-align:center;">🪙 ¡La moneda está en el aire!</div>
+    <div class="coin-wrap">${slot('A')}${slot('B')}</div>
+    ${!anyPlays ? '<p style="color:var(--muted);">Ningún equipo se atrevió... 🐔</p>' : ''}`;
+  // revelar resultado cuando termina el giro
+  setTimeout(()=>{
+    ['A','B'].forEach(t=>{
+      const info = r[t];
+      if (!info?.plays) return;
+      const coin = document.getElementById('coin-'+t);
+      const res = document.getElementById('coin-res-'+t);
+      if (coin) coin.textContent = info.win ? '🎉' : '💀';
+      if (res) {
+        res.textContent = info.win ? '¡×2 PUNTOS!' : '¡TODO A 0!';
+        res.className = 'coin-res ' + (info.win ? 'win' : 'lose');
+      }
+    });
+  }, 2500);
+}
+
+// ════════════════════════════════════════════════════
+// 🎬 CEREMONIA FINAL — premios y equipo ganador
+// ════════════════════════════════════════════════════
+async function finishGame() {
+  document.querySelectorAll('.menu-pop').forEach(m=>m.classList.remove('open'));
+  const students = Object.values(state.allStudents).filter(s=>!s.isGM);
+  if (!students.length) { showToast('No hay alumnos registrados', 'err'); return; }
+  showToast('Calculando premios...', 'ok');
+  const ansSnap = await db.collection('answers').get();
+  const stats = {}; // uid → métricas
+  const stat = uid => stats[uid] || (stats[uid] = { extreme:0, exact:0, best:0, qCorrect:0, qElapsed:0 });
+  ansSnap.forEach(d=>{
+    const a = d.data();
+    const st = stat(a.uid);
+    if (a.kind === 'exercise') {
+      if (a.bet === 'extreme') st.extreme++;
+      st.best = Math.max(st.best, a.pointsAwarded||0);
+      const ex = EXERCISES[a.moduleId];
+      if (ex) ex.fields.forEach(f=>{
+        const sv = parseFloat(a.value?.[f.key]);
+        if (Math.abs(sv - f.correct) <= f.tol) st.exact++;
+      });
+    } else if (a.kind === 'round' && a.correct) {
+      st.qCorrect++; st.qElapsed += a.elapsedMs||0;
+    }
+  });
+  const sorted = [...students].sort((a,b)=>(b.score||0)-(a.score||0));
+  const totA = students.filter(s=>s.teamId==='A').reduce((x,s)=>x+(s.score||0),0);
+  const totB = students.filter(s=>s.teamId==='B').reduce((x,s)=>x+(s.score||0),0);
+  const pick = (fn, min) => {
+    let best=null, bestV=-Infinity;
+    students.forEach(s=>{ const v = fn(stat(s.id), s); if (v > bestV) { bestV=v; best=s; } });
+    return (best && bestV >= (min??1)) ? {s:best, v:bestV} : null;
+  };
+  const awards = [];
+  const temerario = pick(st=>st.extreme);
+  if (temerario) awards.push({icon:'🚀', title:'El Temerario', detail:`${temerario.v} apuesta${temerario.v>1?'s':''} extrema${temerario.v>1?'s':''}`, who:`#${temerario.s.number} ${firstName(temerario.s.name)}`});
+  const rayo = (()=>{
+    let best=null, bestV=Infinity;
+    students.forEach(s=>{ const st=stat(s.id); if (st.qCorrect>=2) { const avg=st.qElapsed/st.qCorrect; if (avg<bestV){bestV=avg;best=s;} } });
+    return best ? {s:best, v:bestV} : null;
+  })();
+  if (rayo) awards.push({icon:'⚡', title:'El Rayo', detail:`${(rayo.v/1000).toFixed(1)}s promedio en preguntas correctas`, who:`#${rayo.s.number} ${firstName(rayo.s.name)}`});
+  const cirujano = pick(st=>st.exact);
+  if (cirujano) awards.push({icon:'🎯', title:'El Cirujano', detail:`${cirujano.v} campos exactos en los ejercicios`, who:`#${cirujano.s.number} ${firstName(cirujano.s.name)}`});
+  const golpe = pick(st=>st.best, 1);
+  if (golpe) awards.push({icon:'💥', title:'El Golpe Maestro', detail:`+${golpe.v.toLocaleString()} pts en un solo ejercicio`, who:`#${golpe.s.number} ${firstName(golpe.s.name)}`});
+  const finale = {
+    at: Date.now(),
+    winner: totA===totB ? 'empate' : (totA>totB ? 'A' : 'B'),
+    totA, totB,
+    podium: sorted.slice(0,3).map(s=>({name:s.name, number:s.number, teamId:s.teamId, score:s.score||0})),
+    awards
+  };
+  await db.collection('meta').doc('session').update({ finale });
+}
+
+function handleFinale() {
+  const f = state.session?.finale;
+  if (!f || f.at === state.lastFinaleAt) return;
+  state.lastFinaleAt = f.at;
+  renderFinale(f);
+  showOverlay('ov-finale');
+}
+
+function renderFinale(f) {
+  const body = document.getElementById('finale-body');
+  const medals = ['🥇','🥈','🥉'];
+  const order = [1,0,2]; // podio: 2° - 1° - 3°
+  const cls = ['p1','p2','p3'];
+  const podium = order
+    .filter(i => f.podium[i])
+    .map(i => {
+      const p = f.podium[i];
+      return `<div class="pod ${cls[i]}">
+        <div class="p-medal">${medals[i]}</div>
+        <div class="p-name" style="color:${teamColor(p.teamId)};">#${p.number} ${firstName(p.name)}</div>
+        <div class="p-pts">${p.score.toLocaleString()} pts</div>
+      </div>`;
+    }).join('');
+  const W = f.winner === 'empate' ? null : TEAMS[f.winner];
+  const teamHTML = W
+    ? `<div class="fin-team" style="border-color:${W.hex};color:${W.hex};background:${W.hex}22;">👑 ¡Gana ${W.emoji} ${W.name}!<br>
+       <span style="font-size:16px;color:var(--text);">${(f.winner==='A'?f.totA:f.totB).toLocaleString()} vs ${(f.winner==='A'?f.totB:f.totA).toLocaleString()} pts</span></div>`
+    : `<div class="fin-team" style="border-color:var(--gold);color:var(--gold);">🤝 ¡Empate épico! ${f.totA.toLocaleString()} pts</div>`;
+  body.innerHTML = `
+    <div class="fin-title">🏁 ¡FIN DEL JUEGO!</div>
+    ${teamHTML}
+    <div class="podium">${podium}</div>
+    <div style="margin-top:14px;">
+      ${f.awards.map((a,i)=>`
+        <div class="award-row" style="animation-delay:${2.2 + i*0.4}s;">
+          <span class="a-icon">${a.icon}</span>
+          <div><div class="a-title">${a.title}</div><div class="a-detail">${a.detail}</div></div>
+          <span class="a-who">${a.who}</span>
+        </div>`).join('')}
+    </div>`;
+  // confeti
+  const conf = document.getElementById('fin-confetti');
+  const emojis = ['🎉','🎊','✨','⭐','🏆'];
+  conf.innerHTML = Array.from({length:28}, () =>
+    `<span style="left:${Math.random()*100}%;animation-duration:${2.5+Math.random()*3}s;animation-delay:${Math.random()*4}s;">${emojis[Math.floor(Math.random()*emojis.length)]}</span>`
+  ).join('');
 }
 
 // ════════════════════════════════════════════════════
@@ -1711,6 +2398,70 @@ function getExerciseProblem(exId) {
     </div>`
   };
   return P[exId] || '';
+}
+
+// ════════════════════════════════════════════════════
+// 📖 PAUTAS — desarrollo paso a paso (feedback inmediato al enviar)
+// ════════════════════════════════════════════════════
+function getExerciseSolution(exId) {
+  const S = {
+    ej1: `<div class="content-card">
+      <h3>📖 Desarrollo — Ejercicio 1</h3>
+      <div class="highlight-box" style="font-size:13px;line-height:1.8;">
+        <b>1.</b> Cᵤ = precio − costo = 2.500 − 1.200 = <b style="color:var(--gold);">$1.300</b> (dejar de ganar por helado faltante)<br>
+        <b>2.</b> C₀ = costo − remate = 1.200 − 600 = <b style="color:var(--gold);">$600</b> (pérdida por helado sobrante)<br>
+        <b>3.</b> Ratio Crítico = Cᵤ/(Cᵤ+C₀) = 1.300/1.900 = <b style="color:var(--gold);">0,684</b><br>
+        <b>4.</b> z = NORMSINV(0,684) ≈ <b style="color:var(--gold);">0,48</b><br>
+        <b>5.</b> Q* = μ + z·σ = 800 + 0,48 × 120 = <b style="color:var(--green);">857,6 helados</b>
+      </div>
+    </div>`,
+    ej2: `<div class="content-card">
+      <h3>📖 Desarrollo — Ejercicio 2</h3>
+      <div class="highlight-box" style="font-size:13px;line-height:1.8;">
+        <b>Q* = √(2SD/iC)</b> con S = $10.000 · i = 10%<br>
+        <b>Y:</b> iC = 0,1×10.000 = 1.000 → Q*ᵧ = √(2×10.000×5.000/1.000) = <b style="color:var(--green);">316,2 u</b><br>
+        <b>Z:</b> iC = 0,1×18.000 = 1.800 → Q*ᶻ = √(2×10.000×3.500/1.800) = <b style="color:var(--green);">197,2 u</b><br>
+        <b>YZ:</b> C ponderado = (5.000×10.000 + 3.500×18.000)/8.500 = $13.294 → iC = 1.329,4<br>
+        &nbsp;&nbsp;&nbsp;Q*ᵧᶻ = √(2×10.000×8.500/1.329,4) = <b style="color:var(--green);">357,6 u</b><br>
+        <b>Costo anual</b> (en Q*: pedir = almacenar → CA = iC×Q*):<br>
+        &nbsp;&nbsp;&nbsp;Y: 1.000×316,2 = <b style="color:var(--green);">$316.228</b> · Z: 1.800×197,2 = <b style="color:var(--green);">$354.965</b> · YZ: 1.329,4×357,6 = <b style="color:var(--green);">$475.395</b><br>
+        <span style="color:var(--muted);">Por separado: 316.228 + 354.965 = $671.193/año · Junto (YZ): $475.395/año → conviene pedir juntos: ahorra $195.798 al año.</span>
+      </div>
+    </div>`,
+    ej3: `<div class="content-card">
+      <h3>📖 Desarrollo — Ejercicio 3 (Sistema Q)</h3>
+      <div class="highlight-box" style="font-size:13px;line-height:1.8;">
+        <b>1.</b> iC = 15% × $20 = $3 → Q* = √(2×12×48.000/3) = <b style="color:var(--green);">619,7 u</b><br>
+        <b>2.</b> D_diaria = 48.000/250 = 192 → m_LT = 192 × 5 = <b style="color:var(--green);">960,0 u</b><br>
+        <b>3.</b> σ_diaria = 1.500/√250 = 94,87 → σ_LT = 94,87×√5 = <b style="color:var(--green);">212,1 u</b><br>
+        <b>4.</b> Nivel 95% → z = <b style="color:var(--green);">1,645</b><br>
+        <b>5.</b> IS = z·σ_LT = 1,645 × 212,1 = <b style="color:var(--green);">348,9 u</b><br>
+        <b>6.</b> R = m_LT + IS = 960 + 348,9 = <b style="color:var(--green);">1.308,9 u</b> → al llegar a R, pide Q*
+      </div>
+    </div>`,
+    ej4: `<div class="content-card">
+      <h3>📖 Desarrollo — Ejercicio 4 (Sistema P)</h3>
+      <div class="highlight-box" style="font-size:13px;line-height:1.8;">
+        <b>1.</b> Q* = 619,7 u (igual que el Ejercicio 3)<br>
+        <b>2.</b> P = Q*/D_diaria = 619,7/192 = <b style="color:var(--green);">3,2 días</b> (se revisa cada ~3 días)<br>
+        <b>3.</b> m' = D_diaria × (P+L) con P≈3 → 192 × 8 = <b style="color:var(--green);">1.536,0 u</b><br>
+        <b>4.</b> σ_LT = 212,1 (la pauta usa σ del lead time) → IS = 1,645 × 212,1 = <b style="color:var(--green);">348,9 u</b><br>
+        <b>5.</b> T = m' + IS = 1.536 + 348,9 = <b style="color:var(--green);">1.885,0 u</b> → en cada revisión se pide hasta llegar a T
+      </div>
+    </div>`,
+    ej5: `<div class="content-card">
+      <h3>📖 Desarrollo — Ejercicio Final FRISCA</h3>
+      <div class="highlight-box" style="font-size:13px;line-height:1.8;">
+        <b>1.</b> Regresión múltiple Y = a + b·X₁ + c·X₂ con los 13 datos (t=0..12)<br>
+        <b>2.</b> Pronosticar t=13..24 y sumar → D_anual ≈ <b style="color:var(--green);">562,6 u</b><br>
+        <b>3.</b> Q* = √(2×50×562,6/2) = <b style="color:var(--green);">≈167,7 u</b><br>
+        <b>4.</b> D_diaria = 562,6/250 = 2,25 → m_LT = 2,25 × 10 = 22,5 u<br>
+        <b>5.</b> σ_diaria = σ_residuos/√25 → σ_LT = σ_diaria×√10 ≈ 3,0<br>
+        <b>6.</b> R = m_LT + 1,645·σ_LT = 22,5 + 4,9 ≈ <b style="color:var(--green);">27,4 u</b>
+      </div>
+    </div>`
+  };
+  return S[exId] || '';
 }
 
 // ════════════════════════════════════════════════════
