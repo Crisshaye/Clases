@@ -501,7 +501,8 @@ const FIREBASE_CONFIG = {
 };
 const GM_PASSWORD = "FRISCA2026";
 const IMG_SLIDES = 62;               // slides 63-80 eliminadas (otro tema)
-const slideSrc = n => `slides/slide-${String(n).padStart(2,'0')}.png`;
+const SLIDE_V = 2;                   // subir en 1 cada vez que se reemplace un PNG (rompe la caché del CDN)
+const slideSrc = n => `slides/slide-${String(n).padStart(2,'0')}.png?v=${SLIDE_V}`;
 
 // ════════════════════════════════════════════════════
 // 🎞️  DECK — slides PNG + slides interactivas intercaladas
