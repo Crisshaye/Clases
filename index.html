@@ -214,6 +214,12 @@ input:focus{border-color:var(--A);}
 #st-mirror-body .chart-container{height:250px;}
 #st-mirror-body .stage-widget{border:none;padding:12px;}
 #st-mirror-body .w-title{font-size:15px;}
+.sim-ctrl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
+.sim-ctrl .gmb{font-size:13.5px;padding:9px 16px;}
+.sys-table-wrap{max-height:200px;overflow-y:auto;margin-top:10px;border:1px solid var(--border);border-radius:8px;}
+.sys-table-wrap .data-table{margin-top:0;}
+.sys-table-wrap th{position:sticky;top:0;z-index:2;}
+#stage-inter .sys-table-wrap{max-height:26vh;}
 
 /* ── QUIZ GRID (proyector: 4 cuadrantes) ── */
 #quiz-grid{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:10px;padding:12px 12px 64px 12px;overflow:auto;z-index:4;background:var(--bg);}
@@ -529,7 +535,9 @@ const DECK = (() => {
   d.push({t:'quiz', r:'r2', label:'❓ Round 2 — EOQ', icon:'❓'});
   img(31,35);
   d.push({t:'widget', w:'ztable', label:'📈 Tabla Normal interactiva', icon:'📈'});
-  img(36,43);
+  img(36,42);
+  d.push({t:'widget', w:'qsim', label:'🏭 Sistema Q en acción (animado)', icon:'🚚'});
+  img(43,43);
   d.push({t:'img', n:44, ex:'ej3'});
   img(45,46);
   d.push({t:'quiz', r:'r3', label:'❓ Round 3 — Sistema Q', icon:'❓'});
@@ -549,6 +557,17 @@ const SIMS = {
   simej1: { title:'🍦 Simulación — Helados del festival (Ejercicio 1)',
     sub:'Demanda ~ N(800, 120) · Cᵤ = $1.300 · C₀ = $600. Mueve Q: la ganancia esperada de miles de festivales simulados es máxima en el Q* que calculaste.',
     mu:800, sigma:120, Cu:1300, Co:600, min:500, max:1200, sample:10, def:671, unit:'helados' }
+};
+
+// ════════════════════════════════════════════════════
+// 🚚 SIMULACIONES DE SISTEMAS Q y P — día a día, animadas
+//    (mismos parámetros que las slides: Q=1.000/R=1.295 · P=5/T=2.542)
+// ════════════════════════════════════════════════════
+const SYS_SIMS = {
+  qsim: { kind:'Q', title:'🏭 Sistema Q en acción', D:200, sigma:150, L:4, Q:1000, R:1295, days:30, startInv:1100,
+    sub:'D = 200 cajas/día (σ = 150) · Q* = 1.000 · R = 1.295 · L = 4 días. Cuando la posición de inventario cae a R, se piden Q cajas 📦 que llegan 🚚 4 días después.' },
+  psim: { kind:'P', title:'📅 Sistema P en acción', D:200, sigma:150, L:4, P:5, T:2542, IS:742, days:30, startInv:1100,
+    sub:'D = 200 cajas/día (σ = 150) · P = 5 días · L = 4 días · T = 2.542. Cada 5 días se revisa 🔍 y se ordena 📦 hasta completar T; el pedido llega 🚚 4 días después.' }
 };
 
 // ════════════════════════════════════════════════════
@@ -725,7 +744,8 @@ const state = {
   unsubs:[], activeChart:null, lastModuleKey:null,
   stageKey:null, stMirrorKey:null, myAnswersKey:'',
   reactionsSince:0, lastEventAt:0, lastFinaleAt:0, lastCoinPhase:null,
-  coinTimer:null, coinCountdown:null, coinVotesUnsub:null
+  coinTimer:null, coinCountdown:null, coinVotesUnsub:null,
+  sysSim:null, sysTimer:null
 };
 function moduleKey(mod) {
   return mod ? `${mod.kind}:${mod.id}` : null;
@@ -1647,7 +1667,7 @@ async function doResetGame() {
   aliasSnap.forEach(d => batch.delete(d.ref));
   batch.set(db.collection('meta').doc('counter'), { n: 0 });
   await batch.commit();
-  await db.collection('meta').doc('session').set({ slide: state.session?.slide||1, module:null, revealed:false, resetAt: Date.now() });
+  await db.collection('meta').doc('session').set({ slide: 1, module:null, revealed:false, resetAt: Date.now() });
   state.allAnswers = {};
   closeOverlay('ov-module');
   showToast('Clase reiniciada', 'ok');
@@ -1701,21 +1721,37 @@ function widgetHTML(w) {
     <p style="color:var(--muted);font-size:13px;">GASOFA: D = 48.000 L/año · S = $7.500 · iC = $45/L/año → Q* = √(2SD/iC)</p>
     <div class="chart-container"><canvas id="eoq-chart"></canvas></div>
     <div class="highlight-box gold" style="margin-top:12px;">En Q* el costo de pedir y el de almacenar son <strong>iguales</strong> — la curva total es plana cerca del óptimo.</div>`;
-  if (w === 'psim') return `
-    <div class="w-title">📅 Sistema P — Simulación del inventario</div>
-    <p style="color:var(--muted);font-size:13px;">Cajas: D = 200/día · P = 5 días · L = 4 días · T = 2.542 · IS = 742</p>
-    <div class="chart-container"><canvas id="p-sim-chart"></canvas></div>
-    <div class="highlight-box" style="margin-top:12px;">El inventario baja con la demanda; en cada revisión (cada 5 días) se ordena hasta T y el pedido llega 4 días después.</div>`;
+  if (w === 'qsim' || w === 'psim') {
+    const c = SYS_SIMS[w];
+    return `
+    <div class="w-title">${c.title}</div>
+    <p style="color:var(--muted);font-size:13px;">${c.sub}</p>
+    <div class="sim-ctrl">
+      <button class="gmb go" id="sys-play" onclick="playSysSim()">▶ Simular 30 días</button>
+      <button class="gmb" onclick="rerollSysSim('${w}')">🎲 Otra demanda</button>
+      <span id="sys-day" style="font-weight:800;color:var(--gold);font-size:15px;"></span>
+      <span id="sys-summary" style="font-size:13px;font-weight:700;"></span>
+    </div>
+    <div class="chart-container" style="margin-top:10px;"><canvas id="sys-chart"></canvas></div>
+    <div class="sys-table-wrap">
+      <table class="data-table" id="sys-table">
+        <tr><th>Día</th><th>Demanda</th><th>Disponible</th><th>En camino</th><th>Posición</th><th>Ordena</th><th>Recibe</th></tr>
+        <tbody id="sys-tbody"></tbody>
+      </table>
+    </div>`;
+  }
   return '';
 }
 function initWidget(w) {
   if (w === 'ztable') { initNormalChart(1.0); updateZSlider(1.0); }
   if (w === 'simcam' || w === 'simej1') initSimChart(w);
   if (w === 'eoq') initEOQChart();
-  if (w === 'psim') initPSimChart();
+  if (w === 'qsim' || w === 'psim') initSysSim(w);
 }
 function destroyActiveChart() {
   if (state.activeChart) { try { state.activeChart.destroy(); } catch(e){} state.activeChart=null; }
+  clearInterval(state.sysTimer);
+  state.sysSim = null;
 }
 
 function normalPDF(z) { return Math.exp(-0.5*z*z)/Math.sqrt(2*Math.PI); }
@@ -1880,59 +1916,145 @@ function initEOQChart() {
   });
 }
 
-function initPSimChart() {
-  const canvas = document.getElementById('p-sim-chart');
-  if (!canvas) return;
-  const D=200, P=5, L=4, Tlvl=2542, IS=742;
-  const days=[], invData=[], revPoints=[];
-  let inv=Tlvl;
-  const pending=[];
-  for(let day=0;day<=35;day++){
-    pending.filter(o=>o.arrival===day).forEach(o=>{inv+=o.qty;});
-    for(let i=pending.length-1;i>=0;i--) if(pending[i].arrival===day) pending.splice(i,1);
-    inv=Math.max(0,inv-D);
-    days.push(day);
-    invData.push(Math.round(inv));
-    if((day+1)%P===0){
-      const Q=Math.max(0,Tlvl-inv);
-      if(Q>0) pending.push({arrival:day+1+L,qty:Q});
-      revPoints.push(day);
-    }
-  }
-  destroyActiveChart();
-  const annotations={
-    tLine:{type:'line',yMin:Tlvl,yMax:Tlvl,borderColor:'#fbbf24',borderWidth:2,borderDash:[6,4],
-      label:{display:true,content:'T = '+Tlvl.toLocaleString()+' (nivel objetivo)',position:'end',color:'#fbbf24',font:{size:11,weight:'bold'},backgroundColor:'rgba(10,14,26,0.85)'}},
-    isLine:{type:'line',yMin:IS,yMax:IS,borderColor:'#f87171',borderWidth:2,borderDash:[4,4],
-      label:{display:true,content:'IS = '+IS.toLocaleString()+' (stock seguridad)',position:'start',color:'#f87171',font:{size:11,weight:'bold'},backgroundColor:'rgba(10,14,26,0.85)'}}
+// ── Motor de simulación Q/P: demanda aleatoria, playback día a día ──
+function genSysRun(cfg) {
+  const rnd = () => {
+    const u1 = Math.random()||1e-9, u2 = Math.random();
+    return Math.max(0, Math.round(cfg.D + cfg.sigma*Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2)));
   };
-  revPoints.forEach((d,i)=>{
-    annotations['rev'+i]={type:'line',xMin:d,xMax:d,borderColor:'rgba(74,222,128,0.6)',borderWidth:1.5,borderDash:[3,3],
-      label:{display:i===0,content:'Revisión',position:'start',color:'#4ade80',font:{size:10},backgroundColor:'rgba(10,14,26,0.8)'}};
-    const del=d+L+1;
-    if(del<=35) annotations['del'+i]={type:'line',xMin:del,xMax:del,borderColor:'rgba(96,165,250,0.6)',borderWidth:1.5,borderDash:[3,3],
-      label:{display:i===0,content:'Llegada (L='+L+'d)',position:'end',color:'#60a5fa',font:{size:10},backgroundColor:'rgba(10,14,26,0.8)'}};
-  });
-  state.activeChart = new Chart(canvas,{
+  let onHand = cfg.startInv;
+  const pending = [];
+  const rows = [];
+  let orders = 0, stockouts = 0;
+  for (let day=1; day<=cfg.days; day++) {
+    const received = pending.filter(p=>p.arrive===day).reduce((a,p)=>a+p.qty,0);
+    onHand += received;
+    for (let i=pending.length-1;i>=0;i--) if (pending[i].arrive===day) pending.splice(i,1);
+    let pipeline = pending.reduce((a,p)=>a+p.qty,0);
+    let position = onHand + pipeline;
+    let ordered = 0;
+    if (cfg.kind === 'Q') {
+      if (position <= cfg.R) ordered = cfg.Q;
+    } else {
+      if ((day-1) % cfg.P === 0) ordered = Math.max(0, cfg.T - position);
+    }
+    if (ordered > 0) { pending.push({arrive: day+cfg.L, qty: ordered}); orders++; pipeline += ordered; position += ordered; }
+    const demand = rnd();
+    const stockout = demand > onHand;
+    if (stockout) stockouts++;
+    rows.push({day, demand, onHand, pipeline, position, ordered, received, stockout});
+    onHand = Math.max(0, onHand - demand);
+  }
+  return { rows, orders, stockouts };
+}
+
+function initSysSim(w) {
+  const canvas = document.getElementById('sys-chart');
+  if (!canvas) return;
+  const cfg = SYS_SIMS[w];
+  destroyActiveChart();
+  const run = genSysRun(cfg);
+  const yMax = Math.max(...run.rows.map(r=>r.onHand), cfg.kind==='P' ? cfg.T : cfg.R) + 350;
+  const baseAnn = {};
+  if (cfg.kind === 'Q') {
+    baseAnn.rLine = {type:'line', yMin:cfg.R, yMax:cfg.R, borderColor:'#fbbf24', borderWidth:2, borderDash:[6,4],
+      label:{display:true, content:'R = '+cfg.R.toLocaleString()+' (punto de reorden)', position:'end', color:'#fbbf24', font:{size:11,weight:'bold'}, backgroundColor:'rgba(10,14,26,0.85)'}};
+  } else {
+    baseAnn.tLine = {type:'line', yMin:cfg.T, yMax:cfg.T, borderColor:'#fbbf24', borderWidth:2, borderDash:[6,4],
+      label:{display:true, content:'T = '+cfg.T.toLocaleString()+' (nivel objetivo)', position:'end', color:'#fbbf24', font:{size:11,weight:'bold'}, backgroundColor:'rgba(10,14,26,0.85)'}};
+    baseAnn.isLine = {type:'line', yMin:cfg.IS, yMax:cfg.IS, borderColor:'#f87171', borderWidth:1.5, borderDash:[4,4],
+      label:{display:true, content:'IS = '+cfg.IS.toLocaleString(), position:'start', color:'#f87171', font:{size:10}, backgroundColor:'rgba(10,14,26,0.85)'}};
+  }
+  state.activeChart = new Chart(canvas, {
     type:'line',
-    data:{labels:days,datasets:[{
-      label:'Inventario (cajas)',data:invData,
-      borderColor:'#c084fc',backgroundColor:'rgba(192,132,252,0.12)',
-      borderWidth:2.5,fill:true,pointRadius:2,tension:0.15
+    data:{ labels: run.rows.map(r=>r.day), datasets:[{
+      label:'Inventario disponible (cajas)', data: run.rows.map(()=>null),
+      borderColor:'#c084fc', backgroundColor:'rgba(192,132,252,0.12)',
+      borderWidth:2.5, fill:true, pointRadius:2.5, tension:0.15, spanGaps:false
     }]},
-    options:{responsive:true,maintainAspectRatio:false,
+    options:{ responsive:true, maintainAspectRatio:false, animation:{duration:150},
       scales:{
-        x:{title:{display:true,text:'Día',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:12},grid:{color:'rgba(255,255,255,0.04)'}},
-        y:{title:{display:true,text:'Cajas',color:'#8892b0'},min:0,max:Tlvl+300,
+        x:{title:{display:true,text:'Día',color:'#8892b0'},ticks:{color:'#8892b0',maxTicksLimit:15},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{title:{display:true,text:'Cajas',color:'#8892b0'},min:0,max:yMax,
            ticks:{color:'#8892b0',callback:v=>v.toLocaleString()},grid:{color:'rgba(255,255,255,0.04)'}}
       },
       plugins:{
         legend:{labels:{color:'#e8ecf5',font:{size:12}}},
-        tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y.toLocaleString()} cajas`,title:items=>`Día ${items[0].label}`}},
-        annotation:{annotations}
+        tooltip:{callbacks:{label:ctx=>`${(ctx.parsed.y??0).toLocaleString()} cajas`,title:items=>`Día ${items[0].label}`}},
+        annotation:{annotations: baseAnn}
       }
     }
   });
+  state.sysSim = { w, cfg, run, baseAnn, idx:0 };
+  document.getElementById('sys-tbody').innerHTML = '';
+  document.getElementById('sys-day').textContent = '';
+  document.getElementById('sys-summary').textContent = '';
+  const play = document.getElementById('sys-play');
+  play.disabled = false; play.textContent = '▶ Simular 30 días';
+}
+
+function rerollSysSim(w) {
+  clearInterval(state.sysTimer);
+  initSysSim(w);
+  playSysSim();
+}
+
+function playSysSim() {
+  const S = state.sysSim;
+  if (!S || !state.activeChart) return;
+  clearInterval(state.sysTimer);
+  S.idx = 0;
+  document.getElementById('sys-tbody').innerHTML = '';
+  document.getElementById('sys-summary').textContent = '';
+  const play = document.getElementById('sys-play');
+  play.disabled = true;
+  state.sysTimer = setInterval(()=>{
+    if (!state.activeChart || !state.sysSim) { clearInterval(state.sysTimer); return; }
+    S.idx++;
+    const i = S.idx - 1;
+    const r = S.run.rows[i];
+    // curva revelada hasta hoy
+    state.activeChart.data.datasets[0].data = S.run.rows.map((x,k)=> k < S.idx ? x.onHand : null);
+    // eventos con emoji: 📦 ordena, 🚚 recibe, 😱 quiebre
+    const ann = {...S.baseAnn};
+    S.run.rows.slice(0, S.idx).forEach(x=>{
+      if (x.ordered > 0) ann['o'+x.day] = {type:'line', xMin:x.day, xMax:x.day, borderColor:'rgba(96,165,250,0.4)', borderWidth:1.5, borderDash:[3,3],
+        label:{display:true, content:'📦', position:'start', backgroundColor:'transparent', font:{size:15}}};
+      if (x.received > 0) ann['a'+x.day] = {type:'line', xMin:x.day, xMax:x.day, borderColor:'rgba(74,222,128,0.4)', borderWidth:1.5, borderDash:[3,3],
+        label:{display:true, content:'🚚', position:'end', backgroundColor:'transparent', font:{size:15}}};
+      if (x.stockout) ann['s'+x.day] = {type:'line', xMin:x.day, xMax:x.day, borderColor:'rgba(248,113,113,0.55)', borderWidth:2,
+        label:{display:true, content:'😱', position:'center', backgroundColor:'transparent', font:{size:16}}};
+    });
+    state.activeChart.options.plugins.annotation.annotations = ann;
+    state.activeChart.update();
+    // tabla que se va llenando
+    const tb = document.getElementById('sys-tbody');
+    if (tb) {
+      tb.insertAdjacentHTML('beforeend', `<tr${r.stockout?' style="background:rgba(248,113,113,.12);"':''}>
+        <td><b>${r.day}</b></td>
+        <td style="${r.stockout?'color:var(--red);font-weight:800;':''}">${r.demand}${r.stockout?' 😱':''}</td>
+        <td>${r.onHand.toLocaleString()}</td>
+        <td>${r.pipeline>0 ? r.pipeline.toLocaleString() : '—'}</td>
+        <td class="val">${r.position.toLocaleString()}</td>
+        <td>${r.ordered>0 ? '📦 '+r.ordered.toLocaleString() : '—'}</td>
+        <td>${r.received>0 ? '🚚 '+r.received.toLocaleString() : '—'}</td>
+      </tr>`);
+      const wrap = tb.closest('.sys-table-wrap');
+      if (wrap) wrap.scrollTop = wrap.scrollHeight;
+    }
+    const dayEl = document.getElementById('sys-day');
+    if (dayEl) dayEl.textContent = `Día ${r.day}/${S.cfg.days}`;
+    if (S.idx >= S.run.rows.length) {
+      clearInterval(state.sysTimer);
+      const ok = S.cfg.days - S.run.stockouts;
+      const pct = Math.round(ok/S.cfg.days*100);
+      const sum = document.getElementById('sys-summary');
+      if (sum) {
+        sum.innerHTML = `${S.run.stockouts===0?'🏆':'📊'} ${ok}/${S.cfg.days} días sin quiebre (<span style="color:${pct>=95?'var(--green)':'var(--red)'};">${pct}% de servicio</span>) · 🚚 ${S.run.orders} pedidos`;
+      }
+      play.disabled = false; play.textContent = '▶ Repetir';
+    }
+  }, 340);
 }
 
 // ════════════════════════════════════════════════════
